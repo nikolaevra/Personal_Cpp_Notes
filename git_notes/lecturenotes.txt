@@ -1,0 +1,1169 @@
+pattern matching in text files
+
+egrep (extended global regular expression parint)
+
+egrep pattern file - prints every line in the file that is matching the pattern
+
+eg: print every line in the file index.html that contains cs246 
+--> egrep cs246 index.html
+
+how many lines in index.html contaij cs 246?
+--> egrep "cs246|cs 246" index.html | wc -l 
+
+or 
+
+--> egrep '(cs|CS) 246' index.html | wc -l
+
+available patterns valled regular expressions, different from globbing patterns
+
+" matches c246 and Cs246
+
+"[cC][sS] 246" [..] means any one char between [.. and ..] 
+               [^...] any one character except... 
+
+Now try adding an optional space: 
+"[cC ][sS] ?246" ? = 0 or 1 or preceding expressions 
+Now what if yiu want to lwave multiple cpaces? 
+                 * = 0 or more of preceding  spaces. notice that its different from globbing
+
+"(cs)*246" 
+--> 246, cs246, cscs246, 
+
+next regular expression is a . dot matxhes any single character
+   			     .* then means anything at all
+
+so egrep "cs.*246" index.html
+--> lines containing cs(anything)246
+
+Always rememver that egrep gives you lines that contain the pattern
+
+^,$ - beginning and end of a line.
+
+"^cs246" - lines that start with cs246
+
+"^cs246$" - lines that are exactly like cs246
+
+last vales is + = 1 or more ocurences of preceding pattern
+
+.+ gives you anything non empty
+
+eg: looking for lines of even length
+
+(..)* this gives you even lines, but 0 is even too. so yiu have to fix it with "^(..)*$" which means that it will have atleast 2 in length.
+
+list files in current directory eith names containing exatly one a 
+
+ls | egrep "^[^a]*a[^a]*$"
+try this later : "^(.a)$"
+
+all words in the global dictionary that start with e and have 5 characters 
+
+egrep "^e....$" /usr/share/dict/words
+
+------premissions--------
+new form of ls command. ls -l gives the ling form listing
+
+-rw-r----- 1 j2smith j2smith 25 Sep 9 15:37 abc.txt
+
+type - what kind of file is it. if its - then its an ordinary file
+     					 d is a directory 
+next 9 characters is permissions - 3 groups of 3 bits 1st 3 are user bit (file owner), 2nd 3 are group bits and finally other bits is (for all other people)
+				   they tell you what each class of user can do to a file or directory
+# of links 
+owner - mane of a user that owns the file
+groups - grops is how linux allows file sharing. a user can belong to on eor more groups 
+       - a file can be associated with one group
+size - file size in bytes
+last modified - last modified timestamp
+name - filename
+
+--> What would happen if you are inside a directory where you have r bit disabled? 
+its like being in a dark room. if yiu know what is in the directory, you can get to it
+
+--> on the other hand, if the directory bit is not set is like a brick wall
+means that yoy have no acces to the directory nor to any file or subdirectory.
+
+Now consider changing permissions 
+
+chmod mode file: mode is u for user, g for group, o for other, a for all,
+		 + add permission, - remove permission, = set permission 
+eg: if you want to give everyone permission to read file
+--> chmod o+r file
+make everyones permission read and write 
+--> chmod a=rx file. need equal because someone might already have write permission and you want to take that away from them 
+what if yiu want to give a user full contorl? 
+--> chmod u=rwx or u+rwx file
+owner can always change the permissions
+
+
+-------------Shell scripts------------------
+	-files containing sequences of shell commands executed as programs
+eg:  print date, current user, current dir
+--> #!/bin/bash -- shebang line
+	date
+	whoami
+	pwd
+
+to execute, you have to use ./myscript
+
+since we are talking about programming, you can set variables here too
+	eg: x=1 (in variables declaration, no spaces are allowed. Because then, the shell will think that you are running a command called 'x', with args =, 1)
+	echo x -> will not work, because it will simply return 'x', you have to use something to tell echo to fetch the x value
+	echo $x -> notes: * you use $ when fetching the value of a variable, No dollar shign when setting a variable.
+		          * Good practice: ${x} might change things occasionaly when you dont know where the variable name ends.
+			  * Finally, all shell varibales are Strings
+	eg: dir=~/c246
+	    echo ${dir}
+	-->/u3/rnikolae/cs246
+	
+	There are also come global variables that are always available to you:
+	- ${PATH} = * list of dirs separated by colons. Reason why shell could't find your script earlier is because it has a set list of places to look fo rprograms that you are trying to run.
+		    * when you type a command, shell searches these directories in order for a program
+		      with that name
+	There is a difference too:
+	* echo "$PATH" --> expands
+	* echo '$PATH' --> doesn't expand
+
+Special variables for Scripts:
+	- $1, $2, $3 .... $n --> these values represent command line argumens
+	
+	eg: Check wether a word is in the dictionary (./isitaword hello)
+	    #/!bin/bash
+	    egrep "^$1$" /usr/share/dict/words
+	
+	eg: a good password should not be found in a dictionary
+	    check whether a word is a good password
+	    #!/bin/bash
+	    egrep "^$1$" /usr/share/dict/words > /dev/null // now we dont want grep to print anything. It's like a blask hole where you can redirect all the output to dismiss it
+	    						   // Note: every program returns a status code, when finished. In case of egrep, the status codes are 0 is found and 1 if not found. (And thats a general convention: 0 = success, !0 = failure)
+							   // Usually, 1 is an expected failure, and larger numbers represent more serious failures
+	    						   // $? is the status of the most resently executed command
+	    if [ $? -eq 0 ]; then // Be very careful with spacing. What is does is runs the command and checks for success. ([ is the name of a program and other things are the arguments. ; is needed to separate commands, otherwise youd have to put the on the next line)
+	    echo Bad Password
+	    else
+	    echo Maybe a good password
+	    fi
+	    
+	eg: now we want to be more careful about the input and verify arguments. Print error messge if something is wrong
+	    #!/bin/bash
+	    usage () {
+	    echo "Usage: $0 password" >&2 // $0 is the command itself >&2 means redirection of output to the stderr
+	    }
+	    if [ $# -ne 1 ]; then // $# - number of arguments
+	    usage
+	    exit 1
+	    fi 
+	    .... as before ..
+
+	In general, the if statemnt looks lik ethis:
+		if [ cond ]; then
+		-
+		-
+		-
+		elif [ cond ]; then // many conditions are available on the handout
+		-
+		-
+		-
+		else 
+		-
+		-
+		-
+		fi 
+
+-----------Loops-------------
+	
+	WHILE LOOP:
+	eg: print numbers from 1 to $1
+	    #!/bin/bash
+	    x=1
+	    while [ $x -le $1 ]; do
+	    echo $x
+	    x=$((x+1)) // this wont work x=$x+1, because $x is a string and you will get "1+1"
+	    done
+
+	Though, most of the time we are going to be looping over a list of files
+	
+	FOR LOOP:
+	eg: you want to remame all .cpp files to .cc
+	    #!/bin/bash
+	    for name in *.cpp; do // *.cpp is a glob that finds all matching files
+	    mv ${name} ${name%cpp}cc // value of name without the trailing cpp
+	    done
+		
+	eg: how many times does the word $1 appear in the file $2
+	    #!/bin/bash
+	    x=0
+	    for word in $(cat $2); do
+	    if [ "$word" = "$1" ]; then // because we are not comparing strings, we are using =, for numbers use -eq
+	    x=$((x+1))
+	    fi
+	    done
+	    echo ${x}
+	
+	eg: Payday is the last friday of the month. When is this month's payday?
+	    2 tasks: compute date
+		     report answer
+	    #!/bin/bash
+	    answer () {
+	    if [ $1 -eq 31 ]; then // inside a function $1, $2 ... $n are the arguments of a function
+	    echo "This month: the 31st"
+	    else
+	    echo "This month: the ${1}th"
+	    fi
+            }
+	    answer $(cal | egrep "[0-9]" | awk '{print $6}' | tail -1)  
+	    
+	    Generalize to any month, but if you dont give a specific month to the program, it will work the old way
+	    #!/bin/bash
+	    answer () { 
+            if [ $2 ]; then 
+            preamble = $2
+            else
+            preamble = "This month"
+            fi
+	    if [ $1 -eq 31 ];
+            echo "${preamble} the 31st"
+            else
+            echo "${preamble}: the ${1}th"
+            fi
+            }
+	    answer $(cal $1 $2 | awk '{print $6}' | egrep "[0-9]" | tail -1) $1 // $1 is the month, if there is no month and a year, then $1 and $2 are blank, nad we get the old behaviour
+
+---------------Testing-----------------
+	essential part of program development
+	
+	
+	Machine testing
+	- ru program on selected input check against spec.
+	- can't check everything, check test cases carefully
+
+	Black/Grey/White box tests
+	- no/full/some knowledge of program implementation
+	Start with black box, supplements with whitebox 
+	Various classes of input
+		-numeric imputs
+		-positive vs negative
+	Boundaries of valid ranges (Very important)
+		-edge cases
+		-multiple edge cases silmuntaneous (corner cases) 
+	Intuition/Experience
+	Extreme cases (maximum difficult variables)
+
+	White box tests - execute all logical paths through the program (Coverage)
+		-make sure all your functions get called
+		
+	Performance testing - is the program efficient enough?
+	Regression testing - sometimes you fix one thing, but then break something else. Have to look out for those
+		- test suites, testing scripts
+
+
+
+----------------------C++--------------------------
+
+	We will learn c++ 14
+
+	Start with what we know, so in C
+	
+	Hello Wrold in C:
+	
+	#include <stdio.h>
+	int main() {
+	printf("Hello World\n");
+	}
+
+
+	Hello World in C++
+	
+	#include <iostream> // stdio.h printf is still available here, but preffered to use header <iostream>
+			    // and outputs std::cout <<data<<data<<data
+			    // std::endl = end of line
+			    // using namespace std; lets you say cout/endl instead of std::cout/std::endl
+			   	
+	using namespace std;
+	int main() { // main must return int in C++
+	cout <<"Hello World"<<endl;
+	return 0;
+	}
+
+	How to compile C++ programs
+	g++-5 -std=c++14 program/cc -0 program // "-0 program" name of created executable, by default: a.out
+	since we did aliases to out proficle in a0, we can write:
+	- g++14 program.cc -0 program
+	and to run, type: ./program
+
+	printf is banned in this course, and other c code, always use c++ stuff
+
+-----------C++ i/o streams-----------------
+
+	C++ gives you 3 i/o streams
+		- cin for reading from stdin
+		- cout, cerr for printing to stdout and stderr
+
+	I/O operators: << means "put to" for output
+		       >> means "get from" for input
+
+	So you can do code like this: cerr << x; - information is flowing from x to cerr
+				      cin >> x;	- information is flowing from cin to x 
+	Arrows show where the information is flowing and its direction
+
+	eg: add two numbers
+
+	#include <iostream>
+	using namespace std;
+
+	int main() {
+	int x, y;
+	cin >> x >> y;
+	cout << x + y << endl;
+	return 0;
+	}
+
+	cin operator ignores whitespace 
+	if input doesn't contain numbers, this thing failes and var is undefined
+	if input is exhausted before we give 2 ints, we press ^d (EOF) then the statement fails and var is again undefined
+
+	if read fails, there is an expression cin.fail() which will always be true when ead fails
+	if you get EOF, then cin.eof() and cin.fail() will both be true
+		- these won't turn on, until you try to read file and fail
+
+	eg: read all ints from stdin, echo them one per line to stdout, stop on any failure
+
+	int main() {
+	int i;
+	while (true) {
+	cin >> i;
+
+	if (cin.fail()) break;
+
+	cout << i << endl;
+	}
+	}
+
+	there is an implicit conversion from cin or cout to bool, which means you can use cin as a condition
+		- so cin is true if successful and false if failes
+
+	********v2.0 of example*********** 
+	int main() { 
+        int i;
+        while (true) { 
+        cin >> i;
+
+        if (!cin) break;
+
+        cout << i << endl;
+        }
+        }
+
+	>>this is C's right bitshift operator. a >> b shifts a's bits to the right y b spots
+
+	eg: 21 >> 3 --> 21 = 10101 So 21 >> 3 = 10 = 2
+	this means the same in C++, so cin moves a bits to b, hence "get from"
+
+	operator >> : has inputs cin on the left (istream) and data on the right (variety of inputs)
+			output? - returns cin (istream)
+			this is why you can write cin >> x >> y >> z; 
+
+	*********v3.0 of example **************
+	int main() { 
+        int i;
+        while (true) {
+        if (!(cin >> i)) break;
+        cout << i << endl;
+        }
+        }
+  
+
+	********v4.0 of example ***********
+	int main() { 
+        int i;
+        while (cin >> i) { 
+        cout << i << endl;
+        }
+        }
+
+	eg: read ints and echo to stdout until eof, skip all nonint input
+
+	int main() {
+		int i;
+		while (true) {
+			if (!(cin>>i)) {
+				if (cin.eof()) break;
+				cin.clear(); // clears the fail bit. But the wrong character is still in the stdin.
+				cin.ignore(); // means to skip the next character
+			}
+		else cout << i << endl 
+		}
+	}
+
+----------------Reading Strings--------------------
+
+	c++ has a type std::string, which you get by #include <string>
+
+	int main() {
+		string s;
+		cin >> s; // skip leading whitespaces and stop at the next whitespace (reads one word)
+		cout << s << endl
+	}
+
+	if you do actually want to read the whitespaces, use: getline(cin,s)
+	- reads form current position to new line into s
+
+	cout << 95 << endl; will print 95 to the screen
+	now if you want to show the value in hexadecimal you have to use %x with printf, but there is no printf in c++
+
+	cout << hex << 95 << endl; prints 5f, which is 95 in hexadecimal
+		hex - is an io manipulator. it ways, that from now on, all subsequent ints are printed in hex
+	if you want to print only one in hex, use "dec" to go back to decimal. (There are many manipulators that are available to us. You can find those in the printed notes)
+	many of the manipulators will require to use #include <iomanip>
+
+	
+
+	Stream abstraction applies to other sources of data. For example, files
+	- You may want to read from a file, rather then stdin
+	- std::ifstream - read from a file
+	- std::ofstream - write to a file
+	
+	File access in C:
+
+int main () {
+	char s [256];
+	FILE *file = fopen ("myfile.txt", "r");
+	
+	while (true) {
+		fscanf(file, "%255s", s);
+		if (feof(file)) break;
+		printf ("%s\n", s)
+	}
+
+	fclose(file);
+}
+
+
+	Now file access in c++
+
+#include <iostream>
+#include <fstream>
+#include <string>
+using namespace std;
+
+int main() {
+	ifstream file {"myfile.txt"}; // shit in the curly brackets is initialization syntax. Declaring the ifstream, opens the file
+	string s; // strings manage their own size
+
+	while (file >> s) { // this will onyl read a word at a time, use getline (file,s) to read line
+		count << s << endl;
+	}
+	// no fclose(), the file is closed automatically, as soon as ifstream goes out of scope
+}
+
+	Anything you can do with cin and cout, you can also do with an ifstream and ofstream
+
+	Example, strings - attach stream to a string var and read from/write to it
+	- the include for that is #include <sstream>, types are std::ostringstream, std:istringstream 
+
+	imagine you have two ints lo=xxxx, hi=yyyy and you want to use them to print a string
+	ostringstream ss; // create a string stream variable
+	ss << Enter a # between " << lo << "and" << hi; // you first fill in the stream
+	string s=ss.str(); // then you turn the stream into a string
+
+	Convert string into #
+	int n;
+	while (true) {
+		cout << "Enter a # " << endl
+		string s;
+		cin >> s;
+	
+		istringstram ss {s}; // shit in {} is initialization
+		// you first read in a string, then turn it into a stream
+
+		if (ss >> n) break; // check if you got an integer out of the stream
+	
+		cout << "I said, "; // if no ints, keep reading
+	}
+
+	cout << "You entered " << n << endl;	
+	}
+
+
+	EXAMPLE revisited: read in #s, skip non-ints
+
+int main() {
+	string s;
+
+	while (cin >> s) { // the only way reading a string can fail is if you have EOF
+		istringstram ss {s}; // you put the input into a stream
+		int n;
+
+		if (ss >> n) cout << n << endl // then you try to pull out an int from the stream
+	}	
+}
+
+	Behaviour is slightly differnt tho, try printing "a1s2d3f4" with both functions
+
+
+*************Strings***************
+
+	in C strings are char* or char[] terminated by \0
+	- you must explicitly manage memory
+	- you must allocate more, as strings get larger
+	- very easy to overwrite that trailing "\0" and corrupt your memory
+
+	in C++ strings
+	- grow as needed, no need to manage memory
+	- safer to manipulate, because they don't depend on the "\0"
+
+	eg (Very important to understand):
+	
+	string s = "hello"; // "hello" is still a C style string with chars |h|e|l|l|o| 
+			    // s is a C++ string created from C string upon initialization
+			    // this is needed for the backwards compatibility with C
+
+	C++ String operations:	
+	Equality - s1 == s2, s1 != s2
+	Comparison - s1 <= s2 (lexicographic)
+	get invidual characters - s[0], s[1] ... s[n]
+	Concat - s3=s1+s2; s3+=s4;
+	length - s.length()
+
+	* more details are in the printed notes
+
+	Default f'n params
+
+	void printWordInFile (string name="suite.txt") { // passing a default parameter 
+		ifstream file {name};
+		string s;
+		while (file >> s) cout << s << endl;
+	}
+
+	now you can call: printWordsInFile("test.txt")
+	or say printWordsInFile() // and it will use default value
+	****optional parameters must come last 
+
+	Overloading
+	c: 
+	int negInt(int n) {return -n;}
+	bool negBool(bool b) {return !b;} 
+
+	c++: Functions with different parameter names, can share the same name
+	int neg(int n) {return -n;}
+	bool neg(bool b) {return !b;}
+
+	the act of doing this, is called overloading. Now when you call a function by its name, how does the compiler know which one, you meant?
+	- compiler, uses the number and type of the arguments to decide which name is being called. So overload must differ in # of args and types of args
+	- may not simply have different return types
+
+------------------Structs----------------------
+	
+	struct Node {
+	int data;
+	Node *next; // in c++ you dont have to mention that Node is a struct
+	};
+
+	struct Node {
+	int data;
+	Node next; // what is wrong with this? -> We have a node inside of a node. You would not be able to tell the size of this stucture
+	};
+
+--------------Constants------------------------
+	Constants: const int maxGrade=100; //must be initialized, you should be using it as much as you can
+	
+	Node n1 = {5, nullptr}; // sytax for null pointer. Null is not a built in variable in c or c++
+	// Null usually is a number = 0, But that could be a problem because you want to use a null for a pointer and it will give you a numebr, not a pointer
+	// thats why c++ came up with nullptr sotha tyou dont have to use null for pointers
+	
+	const Node n2=n1; // this is an immutable copy of n1, means that you can't change n2's fields
+
+-------------Parameter Passing------------------
+
+	Recall the following form 136: 
+	void inc (int n) {++n;}
+	...
+	int x = 5;
+	inc(x);
+	cout << x << endl; //prints 5
+	// example of call by value, where inc gets a copy of x, increments the copy and the original is unchanged.
+	
+	// if you would like to inc to be able to modify the x, you want to pass the pointer to the value, rather than a copy
+	void inc (int *n) {(*n)++;}
+	...
+	int x = 5;
+	inc(&x); // using x's address, rather than the value
+	cout << x << endl; // prints 6 	 
+
+	Q: Why do we say cin >> x and not cin >> &x?
+	A: C++ has another pointer like type, they are called references
+
+-------------References-------------------------- 
+	(VERY IMPORTANT)
+
+	int y = 10;
+	int &z = y; // im saying, z is an lvalue reference to y
+				// like a const pointer, similar to a declaration like:
+				// int *const z = &y (not exactly the same tho)
+
+	References are like constant pointers with automatic dereferencing
+	
+	z[]---->y[10] // z is pointing to the memory location of y and can't be changed
+
+	z = 12; (not *z=12;) // and we get that y == 12
+
+	int *p = &z; // trying to take the address of z, but when you do it, it gives you the address of y
+				// so in all cases z behaves exactly like y, they really should be indistinguishable
+
+	we can say z is an alias ("another name") for y
+	
+	Rules: "Things you cant do with lvalue references" 
+	1. Can not leave them uninitialized //eg: int &x;
+	2. Must initialize to something that has an address // "something that has an address" is called lvalue - the thing on the left of the assignement value
+		// eg: int &x = 3; bad
+		// eg: int &x = y + z; bad 
+		// eg: &x = y; good
+	3. Cannot create a pointer to a reference: int &*x; bad // always start with the variable and work your way up
+		But, perfectly legal to create reference to a pointer: int *&x= ____; good
+	4. Cannot create a reference to a reference:
+		int &&x=___; // this means something different (covered later)
+	5. Cannot create arrays of references: 
+		int &r[3]= {n,n,n}; bad
+
+	Rules: "Things you can do"
+	1. Pass references as function parameters. 
+		void inc (int &n) {++n;} // &n is a constant pointer to the argument. 
+								 // Notice: no pointer dereference, and printing passed value later will give you incremented value
+
+	Q: So why does cin >> x works? 
+	A: Because the operator that you are using takes x by reference
+
+
+	Now we can discuss the exact signature of an input operator:
+	istream &operator >> (istream &in, int &data) // why use references? because rather than using call by value, you take a copy, and that is not allowed to copy streams, 
+												  // also means you can't pass it by value, can only pass by reference	
+	
+	Pass by value. eg: int f (int n) {...} // copies the argument
+	-- If the file is very large, then the copy can be expensive 
+	
+	eg: struct ReallyBig {....}; // if you create a pass by value function on that.
+		int f (ReallyBig rb) {...}; // to avoid copying, you can pass it by reference
+		int g (ReallyBig &rg) {....}; // since i didn't do any copying, this thing is fast
+	"Downside: i can no longer guarantee that rb won't change".
+	
+	So the question is can you have the best of both worlds, where its fast and wont change? Yes!
+
+	int h (const ReallyBig &rb) {...}; // this way its still fast (no copying) and the parameter cannot change. 
+	"Only downside left is if you wanted to change inside the function, but not outside"
+	So here is the advice: 
+		// prefer to pass-by-const-ref over pass-by-value for anything lanrger than a pointer. Unless the function needs to make a copy anyway - then maybe pass by value. 
+	
+	**** 1 More example ****
+
+	int f(int &n) {....};
+	int g(const int &n) {...}; 
+	
+	f(5); // this won't compile
+	// because 5 doesn't have an address. Can't initialize an lvalue reference to a literal value.
+	// if n changes, can't change the literal 5
+	
+	g(5); // perfectly legal
+	// because its a constant reference. Since n can never be changed, the compiler allows this.
+	// how? - compiler creates a temp location to hold the 5, so ref n has something to point to. 
+
+--------------Dynamic Memory Allocation----------------
+	c: int *p = malloc(_______*sizeof (int));
+	....
+	free(p);
+	"DONT USE THIS IN 246"
+	
+	Instead, use new/delete
+	-- type aware
+	-- less error prone
+	
+	EXAMPLE TIME!!
+	struct Node {
+	int data;
+	Node *next;
+	};
+
+	Stack:
+	---------------
+	np // points to values that are on the heap
+
+	Heap:
+	---------------
+	data,
+	next,
+
+	Create value on Heap
+	Node *np = new Node; // 
+	....
+	delete np;
+	
+	// all local variables are stored on the stack, vars are deallocated once they go out of scope. (stack is popped)
+	// allocated memory is stored on the heap, it remains there until i say "fuck this shit, im done" (delete is called)
+	//		-- if you don't delete all allocated memory, you will have a memory leak. Program will eventually fail - incorrect behaviour
+
+	Note: Asked for space to store only one node.
+	But we sometimes want to store more things:
+	
+	Node *np = new Node[10]; // allocates space for 10 nodes. 
+	....
+	delete [] (np);
+
+----------------Return-by-value--------------------
+	
+	Eg: Node getMeANode() {
+	Node n;
+	return n;
+	} // maybe the best option because you might want to take a risk memory use but nothave to worry about clearing memory
+ 	Creating a node and giving it back to the user, requires making a copy. Could be expensive!
+	
+	Q: How to avoid that copy? 
+	A: Return by pointer(ref) instead. 
+
+	Node *getMeANode() {
+	Node n;
+	return &n;
+	} // one of the worst things you can do
+
+	IT RETURNS A POINTER OR A REFERENCE TO A STACK-ALLOCATED DATA THAT IS DEAD ON RETURN.
+	// out of scope!!!
+	// problem that you will not crash a program and compiler might not tell you what the problem is
+
+	If you want to return something fast, make sure the thing you are returning is not from the stack
+	Node *getMeANode() {
+		return new Node;
+	} // this works, but you gotta remember that there is something on the heap and you have to delete it at some point 
+
+	
+	
+------------Operator overloading------------------
+
+	Give meanings to C++ operators for our own types
+	eg:
+	struct Vec {
+	int x, y;
+	};
+
+	Vec operator+ (const Vec &v1, const Vec &v2){
+	Vec v={v1.x+v2.x,, v1.y+v2.y};
+	return v;
+	}
+
+	Vec operator* (const int k, const Vec &v) {
+	return {k*v.x, k*v.y}; // ok because the computer knows that its a Vec based on the return type
+	}
+	
+	Vec operator* (const Vec&v, const int k) {
+	return k*v;
+	}; 
+
+-----------Overloading << and >> (I/O operators)----------------
+
+	eg:
+	struct Grade {
+		int theGrade;
+	};
+
+
+	ostream &operator<< (ostream &out, const Grade &g) { // you have to use references because ostream can not be copied
+		out << g.theGrade << '%' // to print a percent sign every time after the grade
+		return out; // or "return out << g.theGrade << '%'"
+	};
+
+	istream &operator>> (istream &in, Grade &g) { // no const for Grade because you want to change it
+		in >> g.theGrade;
+		if (g.theGrade < 0) {
+			g.thegrade = 0;		
+		} 
+		if (g.theGrade > 100) { 
+			g.theGrade = 100;
+		}
+		return in;
+	}
+	
+	int main () {
+		Grade g;
+		while (cin >> g) coutn << g << endl;
+	}
+
+-------------The Preprocessor---------------------
+
+	Transforms the program before the compiler sees it. 
+	// you know you are dealing with a preprocessor because you will see a line like this: 
+	// #_______ - preprocessor directive 
+	We already know the #include
+		- if you are including old C headers, there is a new naming convention:
+		eg: instead of #include <stdio.h> use #include <cstdio>
+
+	#define VAR VALUE // sets a preprocessor variable.
+	// acts like search and replace. If preprocessor ever sees a VAR anywhere, it will replace it with VALUE
+
+	#define MAX 10 
+		int x[MAX]; // transformed int x[10]
+	This is very outdated tho, we use const definition instead
+	Then why are we covering it? --> It can be used for other things 
+	
+	#define FLAG // sets the variable FLAG and its value is the empty string
+	Howeever, this is useful for conditional compilation. Sometimes you want your program to look different in different situations. 
+	In order to accomodate for different OSs, you have to vary code a little bit.
+
+	eg:
+	#define IOS 1
+	#define BBOS 2
+	#define OS IOS (or BBOS)
+	#if OS == IOS
+		short int publickey; // if true, compiler sees this
+	#elif OS == BBOS
+		long long int publickey; // if false, this code is suppressed and compiler doesn't see it 
+	#endif 
+	Remember that preprocessor runs before the compiler sees it. 
+	
+	Special Case:
+	#if 0 // this is never true, all inner text is removed before it gets to the compiler
+	#endif 
+	Good as a heavy duty commenting out
+
+	Can also define symbols via compiler arguments
+	eg: 
+	int main() {
+		cout << X << endl; // won't compile, because x is undefined
+	}
+	
+	But we can define x on the g++ command line
+	--> g++ -DX=15 define.cc -o define // compile the file, but before you compile, define X as 14, then compile
+	// convention says that its better to use capitals for all defined variables
+	
+	#ifdef NAME // true if NAME has been defined
+	#ifndef NAME // true if NAME has not been defined
+
+	Useful for debugging
+	eg:
+	int main() {
+		#ifdef DEBUG
+			cout << "setting x=1" << endl;
+		#endif
+			int x=1;
+			while (x < 10) {
+				++x;
+				#ifdef DEBUG
+					cout << "x is now" << x << endl;
+				#endif
+			}
+		cout << x << endl;
+	}	
+
+	if you compile it normally
+	--> g++14 debug.cc -o debug
+	if you want to debug 
+	--> g++14 -DDEBUG debug.cc -o debug
+
+	
+-------------Separate Compilation---------------
+
+	You want to split your program into composable modules, with an 
+	- interface: contains things such as type definitions, prototypes of functions (your .h file)
+	- implementation: the full definition of your functions (your .cc file)
+
+	Recall: 
+		when we speak of a declaration, all it does is it asserts existance, whereas definitions give full details and allocate space
+		for those things that occupy space. 
+
+	eg: if we take the Matrix functions from before and make them into proper files
+	**************vec.h******************
+	__________________________________________
+	struct Vec {
+		int x, y;
+	}
+	Vec operator+ (const Vec &v1, const Vec &v2);
+
+	*************main.cc************************
+	____________________________________________
+	#include "vec.h"
+	
+	int main() {
+		Vec v = {1, 2};
+		v = v + v;
+		.....
+	}
+
+	*****************vec.cc*********************
+	____________________________________________
+	#include "vec.h"
+	
+	Vec operator+ (const Vec &v1, const Vec &v2) {
+		....
+		....
+		....
+	}
+
+	Recall, an entity can be defined many times, but defined at most once.
+
+-----------------Linker (Compiling separately)------------------------
+	
+	VERY IMPORTANT:
+		ls the directory:
+			vector.h vector.cc main.cc
+		then you run:		
+			g++14 vector.cc
+		and get a shit error:	// if you get errors in /usr/bin/ld then you are fine, its a linking error
+			look at the pre-last line: thats where the error is
+		then you run:
+			g++14 main.cc
+		and get a shit error again // look at the end for error description again
+		
+
+	To compile separately, do:
+	-> g++14 -c vector.cc
+	-> g++14 -c main.cc
+	// -c means compile only, do not link, do not build the executable
+	So now we have a compiled, but unlinked code: 
+		ls the directory:
+		main.cc main.o vector.cc vector.o vector.h
+
+	.o file is an object file all compiled, but not liked. 
+	To do linking, use 
+		g++14 vec.o main.o -o main
+	now you can sun ./main
+
+	Notice, we didn't compile .h file. 
+
+	NOTICE!!!!
+	NEVER EVER, EVER COMPILE .H FILES EVER!!!!
+	!!!!!!!!!code in the .h files is compiled automatically because it is included in other files
+
+	Suppose you wanted to add a global variable 
+		Global var: int globalNum;
+	You should never include it in the .h file because every time the .h file is included compiler will make a copy of it
+	You have to define it in .h, but not initialize it using extern global var;
+	Initialize the vatrible in a .cc file global var = 14;
+
+------------------------Including shit in your modules---------------------------
+
+	imagine you have vac.h, vec.cc linalg.h, linalg.cc, main.cc
+		!!!!!!this won't compile!!!!!!!!! 
+	main.cc, linalg.cc include linalg.h, vec.h
+	linalg.h includes vec.h
+
+	-> main.cc, linalg.cc get 2 copies of vec.h
+
+	STRUCT VEC IS DEFINED TWICE 
+
+	Need to prevent files from being included
+
+	Solution: 
+	Vec.h:
+	#ifdef VEC_H
+	#define VEC_H
+	.
+	. // file content
+	.
+	#endif
+
+	First time vec.h is included symbol VEC_H is not defined, so file is included. After that VEC_H is defined, so content are suppressed
+
+	Rules: 
+	- ALWAYS put include guards in .h files 
+	- NEVER include .cc files // you will end up with 2 copies of definitions and functions because you will get one from .cc file and another when .cc is included somewhere else
+	- NEVER put using namespace std in header files // if you do that, you are forcing your client not to use std namespace either, which is not fair
+		- inside header files always say std::cin, std::string etc.
+
+	Midterm coming up
+	-> Better study, do not be behind on aynthing! gotta understand week 1 content
+
+-----------------OOP Classes--------------
+	- can put functions inside of structs
+	
+	eg:
+	struct Student {
+		int assns, midterm, final;
+		float grade () {
+			return assns*0.4+midterm*0.2+final*0.4;
+		}
+	}
+
+	Student s{60,70,80} // then you can create a struct 
+	cout << s.grade() << endl // and use functions inside classes to return values
+
+	Definitions: 
+	- Class -> a struct type that cat contain functions
+			-> c++ does have a class keyword. We will cover it later
+
+	- Object -> an instance of a class
+			 -> So Student s{60,70,80}. Student is the class and s is the object
+			 -> then function grade(), is called a member function or a method. First method that we have written in this course, before everything was functions.
+
+	What do assns, midterm, final inside of grade() {.....} mean? What do they refer to, if in struct we didn't initialize anything?
+		-> They are fields of hte current object - upon which grade was invoked.
+
+	eg: 
+	Student billy {60,70,80}
+	billiy.grade() // This is a method call and inside the grade(), billy's assns, mitderm, final are used.
+
+	This is why methods and functions are different
+		Formally: methods take a hidden extra parameter called "this"
+		- this is a pointer to the object on which the medhod was invoked
+		eg: billy.grade() // this == &billy
+
+		can write the following to be more formal:
+		Struct Student {
+			int assns, midterm, final;
+			float grade() {
+				return this->assns*0.4+this->midterm*0.2+this->final*0.4;
+			}
+		}
+
+------------------Object Initialization----------------------
+
+	Student billy{60,70,80} // ok, but a bit limited
+
+	A better option would be writing a method that does the initialization for us
+		- such a method is called a constructor
+
+	Struct Student {
+		int assns, midterm, final;
+		float grade()  {........}
+		
+		Student(int assns, int midterm, int final) {
+			this->assns=assns;
+			this->midterm=midterm;
+			this->final=final;
+		}
+	}
+
+	Now that we have a constructor, we can do this:
+		Student billiy{60,70,80}; // this is much better
+
+	DIFFERENCE: now we are calling a constructor
+	It works like this: if a constructor has been defined, the three variables are being passed to contructor,
+						if no constructor has been defined, these initalize the individual fields od student.
+
+	OR // a different syntax, but does the same thing
+	Student billy = Student {60,70,80};
+
+	before we were creating billiy object on the stack. Now to create it on the HEAP:
+	Student *pBilly = new Student{60,70,80};
+
+	Advantages of constructors:
+	- default parameters
+	- overloading
+	- sanity checks (validate values), 
+		
+	eg:
+		Struct Student {
+			....
+			Student (int assns=0, int midterm=0, int final=0) {
+				....			
+			}
+		}
+
+		Now we can do Student Jane{60,70} // where final is initialized as 0
+		Student newKid; // all the marks are 0
+
+	Note:
+	- Every class comes with a default constructor (takes no arguments)
+	eg: 
+		vec v; // something we did a couple days ago. 
+			   // this calls a default constructor. What it does is it runs through struct and default-constructs any fields that are objects
+			   // in case of vec, it does nothing because there are no objects, all we had are the two ints, which are not considered as objects
+
+	So if it does not do anything, how do you know that its there?
+	-> You can check by taking away the dafault constructor
+
+	The built-in default constructor GOES AWAY if you provide your own costructor
+	eg:
+	Struct vec {
+		int x, y;
+		vec(int x, int y) {
+			this->x=x;
+			this->y=y;
+		}
+	};
+
+	Now if we run vec v, it won't compile. It compiled before, but it won't anymore, because the default constructor has been overwritten by our own constructor
+	// however, beofre, when we intialized structures the x and y were both uninitialized
+	// Remember how we mentioned that default contructor only initializes objects?
+	// What happens is that our default constructor, calls the other object's default contructor.. and so on
+
+	What if a struct contains const or refs?
+	Struct myStruct {
+		const int myConst;
+		int &myRef;
+	} // this is interesting, because const and ref, must be initialized 
+	 
+	int z;
+	Struct myStruct {
+		const int myConst=5;
+		int &myRef=z;
+	} // we can do this, but its probably not what we want
+	// because at the end we will end up with as many myCosnt as we created objects. We will have many duplicates
+
+	But does every instance of myStudent need the same value of myConst
+	eg:
+	Struct myStudent {
+		const int id; // doesn't change, but you don't need the same one for all students
+		...
+	}
+
+	So if that is not what we need. How should we do it then?
+	// by the time it gets to constructor body, it will be too late, because the fields should have been intialized before that
+
+	What happens when an object is created? 
+	1) Space is allocated
+	2) Fields are constructed // we want to put our intializations here!!!
+	3) Constructor body runs // its too late to intialize variables here because they happen in step 2
+
+	We do that using member intialization list (MIL)
+	eg:
+	Struct Student {
+		const int id;
+		int assns, midterm, final;
+		Struct (int id, int midterm, int final):
+			id{id}, assns{assns}, midterm{midterm}, final{final} { // before we start the construction body (right before the first { )
+			// there are rules tho. Shit before the curly brackets are fileds. Inside the brace brackets are the normal c++ scope rules and id, midterm, final are just parameters 		
+		}
+	}	
+
+	Notes: 
+	- notice that you can intialize any field this way, not only const and ref
+	- the fields are initialized in which they are declared in the class, not in order of MIL. // so that if one field uses a value of another, it still works
+	- MIL is sometimes more efficient then setting fields in teh body // because no matter what you do, step 2 is going to happen
+		eg: you have a String name in your class. if you dont intialize String in your step 2, it will still happen because objects are always intialized in default constructor
+			so you will do the work twice, to first initialize string as null and then to give it an actual value
+	MORAL!!! embrace the MIL. You should be using it all the time in constructors
+	
+	What if a field is iitialized inline, and in the MIL?
+
+	Struct vec {
+		int x=0, y=0;
+		vec(int x): x{x} {
+			....
+		}
+	} // MIL takees precedence overregular field initializations 
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
