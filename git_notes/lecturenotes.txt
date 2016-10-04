@@ -1,176 +1,242 @@
-pattern matching in text files
+﻿-------------------pattern matching in text files-------------------
 
-egrep (extended global regular expression parint)
+	egrep (extended global regular expression print)
 
-egrep pattern file - prints every line in the file that is matching the pattern
+	Usecase: egrep pattern file - prints every line in the file that is matching 		   the pattern
 
 eg: print every line in the file index.html that contains cs246 
---> egrep cs246 index.html
+--> egrep cs246 index.html // pattern = cs246
 
 how many lines in index.html contaij cs 246?
---> egrep "cs246|cs 246" index.html | wc -l 
+--> egrep "cs246|cs 246" index.html | wc -l // find the pattern, then pipe output of egrep to wc (-l gives the number of lines) to get number of occurences
 
-or 
+OR 
 
---> egrep '(cs|CS) 246' index.html | wc -l
+--> egrep '(cs|CS) 246' index.html | wc -l // allows to search for both “cs246” and “cs246”
 
-available patterns valled regular expressions, different from globbing patterns
+available patterns called regular expressions, different from globbing patterns
 
-" matches c246 and Cs246
-
-"[cC][sS] 246" [..] means any one char between [.. and ..] 
-               [^...] any one character except... 
+"[cC][sS] 246" [] means to look for any one char between [ and ] 
+               [^...] means to look for any one character except ... 
 
 Now try adding an optional space: 
-"[cC ][sS] ?246" ? = 0 or 1 or preceding expressions 
-Now what if yiu want to lwave multiple cpaces? 
-                 * = 0 or more of preceding  spaces. notice that its different from globbing
+"[cC][sS] ?246" 
+	? = 0 or 1 or preceding expressions // so we are looking for:
+		“cs(0 or 1 space 	characters)246”
+	
+Now what if you want to leave multiple spaces?
+	* = 0 or more of preceding  spaces. notice that its different from globbing
+“cs( )*246” // we are looking for “cs(0 or more space character)246”
 
-"(cs)*246" 
---> 246, cs246, cscs246, 
+Similar example: 
+"(cs)*246" // we are looking for “(0 or more occurences of “cs”)246”
+Possible results -> 246, cs246, cscs246, 
 
-next regular expression is a . dot matxhes any single character
-   			     .* then means anything at all
+Next regular expression is a . (dot) matches any single character
+	.* then means anything at all // we are saying 0 or more occurances of any 		character, which imples, find everything 
 
-so egrep "cs.*246" index.html
---> lines containing cs(anything)246
+"cs.*246"
+Possible results -> lines containing cs(anything in between)246
 
-Always rememver that egrep gives you lines that contain the pattern
+Always remember that egrep gives you lines that contain the pattern, not number of occurences
 
-^,$ - beginning and end of a line.
+More regular expressions
 
-"^cs246" - lines that start with cs246
+^,$ - beginning and end of a line. //begin matching exactly with the characters 	after ^(chars)
+	// match line that ends with character before (chars)$
 
-"^cs246$" - lines that are exactly like cs246
+"^cs246" // lines that start with cs246
 
-last vales is + = 1 or more ocurences of preceding pattern
+"^cs246$" // lines that are exactly like cs246
 
-.+ gives you anything non empty
+last regular expression is:
+.+ // 1 or more ocurences of preceding pattern
 
-eg: looking for lines of even length
+.+ gives you anything non-empty // looking for any one character occuring atleast 	once. Means we are looking for non-empty
 
-(..)* this gives you even lines, but 0 is even too. so yiu have to fix it with "^(..)*$" which means that it will have atleast 2 in length.
+eg: We are looking for lines of even length
 
-list files in current directory eith names containing exatly one a 
+(..)* this gives you even lines, but 0 is even too. so you have to fix it with "^(..)*$" which means that it will have atleast 2 in length.
+	// the two dots in brackets mean any two characters, so its either 2,4,6..
 
-ls | egrep "^[^a]*a[^a]*$"
-try this later : "^(.a)$"
+List files in current directory with names containing exatly one a 
 
-all words in the global dictionary that start with e and have 5 characters 
+ls | egrep "^[^a]*a[^a]*$" // start with 0 or more occurences of not a
+	// then look for 0 or more occurences of a with no a after it
 
-egrep "^e....$" /usr/share/dict/words
+Look for all words in the global dictionary that start with e and have 5 characters 
 
-------premissions--------
-new form of ls command. ls -l gives the ling form listing
+egrep "^e....$" /usr/share/dict/words // starts with e and .... means any 4 other 	characters after e
 
+-------------------------------Permissions-------------------------------
+
+	new flag for “ls” command. ls -l gives the long form listing
+
+eg:
 -rw-r----- 1 j2smith j2smith 25 Sep 9 15:37 abc.txt
 
-type - what kind of file is it. if its - then its an ordinary file
-     					 d is a directory 
-next 9 characters is permissions - 3 groups of 3 bits 1st 3 are user bit (file owner), 2nd 3 are group bits and finally other bits is (for all other people)
-				   they tell you what each class of user can do to a file or directory
-# of links 
-owner - mane of a user that owns the file
-groups - grops is how linux allows file sharing. a user can belong to on eor more groups 
-       - a file can be associated with one group
-size - file size in bytes
-last modified - last modified timestamp
-name - filename
+Char 1:
+type - what kind of file is it.
+	// - an ordinary file. 
+	// d is a directory 
 
---> What would happen if you are inside a directory where you have r bit disabled? 
-its like being in a dark room. if yiu know what is in the directory, you can get to it
+Next 9 characters are permissions, 3 groups of 3 bits 
+	1st 3 are user bit (file owner)
+	2nd 3 are group bits 
+	3rd 3 are the other bits (for all other people)
+they tell you what each class of user can do to a file or directory
 
---> on the other hand, if the directory bit is not set is like a brick wall
-means that yoy have no acces to the directory nor to any file or subdirectory.
+Next we have # of links:
+	owner - user that owns the file
+	groups - grops is how linux allows file sharing. a user can belong to 1+ 				groups 
+             - a single file can be associated with one group
+
+Then we have:
+	size - file size in bytes
+	last modified - last modified timestamp
+	name - filename
+
+Q: What would happen if you are inside a directory where you have r bit disabled? 
+A: its like being in a dark room. if you know what is in the directory, you can get 	to it, if you dont, you can only try guessing
+
+A: On the other hand, if the directory bit is not set it is like a brick wall.
+Means that you have no acces to the directory nor to any file or subdirectory.
 
 Now consider changing permissions 
 
-chmod mode file: mode is u for user, g for group, o for other, a for all,
-		 + add permission, - remove permission, = set permission 
+command: chmod [mode] [file] 
+// mode is u for user
+	     g for group
+	     o for other
+	     a for all,
+		 
+// + to add permission
+   - to remove permission
+   = to set permission
+ 
 eg: if you want to give everyone permission to read file
---> chmod o+r file
-make everyones permission read and write 
---> chmod a=rx file. need equal because someone might already have write permission and you want to take that away from them 
-what if yiu want to give a user full contorl? 
---> chmod u=rwx or u+rwx file
-owner can always change the permissions
+--> chmod o+r [file]
+
+if you want to make everyones permission read and execute 
+--> chmod a=rx [file] // need equal because someone might already have write permission and you want to take that away from them
+
+what if you want to give a user full control? 
+--> chmod u=rwx [file] // or u+rwx file
+// file/directory owner can always change the permissions so can root
 
 
--------------Shell scripts------------------
-	-files containing sequences of shell commands executed as programs
-eg:  print date, current user, current dir
---> #!/bin/bash -- shebang line
-	date
-	whoami
-	pwd
+-----------------------------Shell scripts-------------------------------------
+	// files containing sequences of shell commands executed as programs
 
-to execute, you have to use ./myscript
+eg: we want to print date, current user, current dir
+#!/bin/bash // this is called “shebang line” needed to tell bash where to look for 		// our code
+date
+whoami
+pwd
 
-since we are talking about programming, you can set variables here too
-	eg: x=1 (in variables declaration, no spaces are allowed. Because then, the shell will think that you are running a command called 'x', with args =, 1)
-	echo x -> will not work, because it will simply return 'x', you have to use something to tell echo to fetch the x value
-	echo $x -> notes: * you use $ when fetching the value of a variable, No dollar shign when setting a variable.
-		          * Good practice: ${x} might change things occasionaly when you dont know where the variable name ends.
-			  * Finally, all shell varibales are Strings
-	eg: dir=~/c246
-	    echo ${dir}
-	-->/u3/rnikolae/cs246
+to execute, you have to type ./myscript in command line 
+// here we are saying that bash should look in ./  (current) directory for script
+
+since we are talking about programming, you can set variables here too:
+
+eg: x=1 
+// in variable declaration, no spaces are allowed. Because then, the shell will think that you are running a command called 'x', with args “=” and “1”)
+
+Now getting value of a variable:
+eg:
+echo x
+// will not work, because it will simply return 'x', you have to use something to tell echo to fetch the x value
+
+Instead, we should use:
+eg:
+echo $x
+
+Notes:
+* Use $ when fetching the value of a variable, No dollar sign when setting a variable tho.		 
+* Good practice: ${x} might change things occasionaly when you dont know where the variable name ends. For example ${file}.in is different from $file.in
+* Finally, all shell varibales are Strings
+
+
+
+eg: 
+dir=~/cs246
+echo ${dir}
+
+Output:
+/u3/username/cs246
 	
-	There are also come global variables that are always available to you:
-	- ${PATH} = * list of dirs separated by colons. Reason why shell could't find your script earlier is because it has a set list of places to look fo rprograms that you are trying to run.
-		    * when you type a command, shell searches these directories in order for a program
-		      with that name
-	There is a difference too:
-	* echo "$PATH" --> expands
-	* echo '$PATH' --> doesn't expand
+There are also come global variables that are always available to you:
+eg:
+${PATH} // a list of dirs separated by colons. 
+
+Reason why shell could't find your script earlier (when you run without “./”)is because it has a set list of dirs to look for programs that you are trying to run.
+When you type a command, shell searches these directories in order to find a program with that name
+
+There is a difference here too:
+	* echo "$PATH" --> expands // “” returns value of $PATH
+	* echo '$PATH' --> doesn't expand // '' returns var name PATH
 
 Special variables for Scripts:
-	- $1, $2, $3 .... $n --> these values represent command line argumens
+	$1, $2, $3 .... $n 
+// these values represent command line argumens that you pass to your script
 	
-	eg: Check wether a word is in the dictionary (./isitaword hello)
-	    #/!bin/bash
-	    egrep "^$1$" /usr/share/dict/words
+eg: Check wether a word is in the dictionary (./isitaword hello)
+	#/!bin/bash
+	egrep "^$1$" /usr/share/dict/words
 	
-	eg: a good password should not be found in a dictionary
-	    check whether a word is a good password
-	    #!/bin/bash
-	    egrep "^$1$" /usr/share/dict/words > /dev/null // now we dont want grep to print anything. It's like a blask hole where you can redirect all the output to dismiss it
-	    						   // Note: every program returns a status code, when finished. In case of egrep, the status codes are 0 is found and 1 if not found. (And thats a general convention: 0 = success, !0 = failure)
-							   // Usually, 1 is an expected failure, and larger numbers represent more serious failures
-	    						   // $? is the status of the most resently executed command
-	    if [ $? -eq 0 ]; then // Be very careful with spacing. What is does is runs the command and checks for success. ([ is the name of a program and other things are the arguments. ; is needed to separate commands, otherwise youd have to put the on the next line)
-	    echo Bad Password
-	    else
-	    echo Maybe a good password
-	    fi
-	    
-	eg: now we want to be more careful about the input and verify arguments. Print error messge if something is wrong
-	    #!/bin/bash
-	    usage () {
-	    echo "Usage: $0 password" >&2 // $0 is the command itself >&2 means redirection of output to the stderr
-	    }
-	    if [ $# -ne 1 ]; then // $# - number of arguments
-	    usage
-	    exit 1
-	    fi 
-	    .... as before ..
+eg: a good password should not be found in a dictionary. check whether a word is a good password
+	#!/bin/bash
+	egrep "^$1$" /usr/share/dict/words > /dev/null 
+// now we don't want egrep to print anything, so we redirect output to /dev/null. It's like a black hole where you can redirect all the output to dismiss it
 
-	In general, the if statemnt looks lik ethis:
-		if [ cond ]; then
-		-
-		-
-		-
-		elif [ cond ]; then // many conditions are available on the handout
-		-
-		-
-		-
-		else 
-		-
-		-
-		-
-		fi 
+// Note: every program returns a status code, when finished. In case of egrep, the status codes are 0 if found 1+ matches and 1 if not found. (And thats a general convention: 0 = success, !0 = failure)
+							   
+// Usually, 1 is an expected failure, and larger numbers represent more serious failures
 
------------Loops-------------
+“$?” is the status of the most resently executed command
+
+Now, if statements:
+
+if [ $? -eq 0 ]; then 
+
+// Be very careful with spacing. What it does is runs a command and checks for 	success.
+// “[“ is the name of a program and other things are the arguments. 
+// “;” is needed to separate commands, otherwise you'd have to put “then” on the 	next line
+
+	echo “Bad Password”
+	else
+	echo “Maybe a good password”
+fi
+
+eg: now we want to be more careful about the input and verify arguments. Print error messge if something is wrong
+
+#!/bin/bash
+usage () {
+	echo "Usage: $0 password" >&2 
+	// “$0” is the command itself “>&2” means redirection of output to the stderr
+	}
+	if [ $# -ne 1 ]; then // $# - number of arguments
+	    usage // calling function usage()
+	    exit 1 // exit with expected error
+	fi // closing if statement
+	.... as before ....
+
+In general, the if statemnt looks like this:
+	if [ cond ]; then
+		-
+		-
+		-
+	elif [ cond ]; then // many more conditions are available on the handout
+		-
+		-
+		-
+	else 
+		-
+		-
+		-
+	fi 
+
+------------------------------Loops------------------------
 	
 	WHILE LOOP:
 	eg: print numbers from 1 to $1
