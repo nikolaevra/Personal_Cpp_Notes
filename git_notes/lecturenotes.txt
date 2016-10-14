@@ -812,6 +812,7 @@ A: C++ has another pointer like type, they are called references
 	} // this works, but you gotta remember that there is something on the heap and you have to delete it at some point	
 	
 ----------------------Operator overloading--------------------
+
 	(this is amazing, changed my life #revolutionary)
 
 	Operator overloading allows us to give meanings to C++ operators for our own types
@@ -1053,17 +1054,17 @@ A: C++ has another pointer like type, they are called references
 	-> Better study, do not be behind on aynthing! gotta understand week 1 content
 
 -----------------OOP Classes--------------
-	- can put functions inside of structs
+	- is different from structs because you can put functions inside of classes
 	
 	eg:
 	struct Student {
 		int assns, midterm, final;
 		float grade () {
-			return assns*0.4+midterm*0.2+final*0.4;
+			return assns*0.4 + midterm*0.2 + final*0.4;
 		}
 	}
 
-	Student s{60,70,80} // then you can create a struct 
+	Student s{60, 70, 80} // then you can create a struct 
 	cout << s.grade() << endl // and use functions inside classes to return values
 
 	Definitions: 
@@ -1072,17 +1073,17 @@ A: C++ has another pointer like type, they are called references
 
 	- Object -> an instance of a class
 			 -> So Student s{60,70,80}. Student is the class and s is the object
-			 -> then function grade(), is called a member function or a method. First method that we have written in this course, before everything was functions.
+			 -> then function grade(), is called a member function or a method. First method that we have written in this course, before this, everything was functions.
 
 	What do assns, midterm, final inside of grade() {.....} mean? What do they refer to, if in struct we didn't initialize anything?
-		-> They are fields of hte current object - upon which grade was invoked.
+		-> They are fields of the current object // upon which grade was invoked.
 
 	eg: 
-	Student billy {60,70,80}
+	Student billy{60, 70, 80}
 	billiy.grade() // This is a method call and inside the grade(), billy's assns, mitderm, final are used.
 
 	This is why methods and functions are different
-		Formally: methods take a hidden extra parameter called "this"
+		Formally: methods takes a hidden extra parameter called "this"
 		- this is a pointer to the object on which the medhod was invoked
 		eg: billy.grade() // this == &billy
 
@@ -1096,7 +1097,7 @@ A: C++ has another pointer like type, they are called references
 
 ------------------Object Initialization----------------------
 
-	Student billy{60,70,80} // ok, but a bit limited
+	Student billy{60, 70, 80} // ok, but a bit limited
 
 	A better option would be writing a method that does the initialization for us
 		- such a method is called a constructor
@@ -1113,14 +1114,14 @@ A: C++ has another pointer like type, they are called references
 	}
 
 	Now that we have a constructor, we can do this:
-		Student billiy{60,70,80}; // this is much better
+		Student billy{60,70,80}; // this is much better
 
-	DIFFERENCE: now we are calling a constructor
+	DIFFERENCE: now we are calling our own constructor
 	It works like this: if a constructor has been defined, the three variables are being passed to contructor,
-						if no constructor has been defined, these initalize the individual fields od student.
+						if no constructor has been defined, these initalize the individual fields of student.
 
 	OR // a different syntax, but does the same thing
-	Student billy = Student {60,70,80};
+	Student billy = Student{60,70,80};
 
 	before we were creating billiy object on the stack. Now to create it on the HEAP:
 	Student *pBilly = new Student{60,70,80};
@@ -1128,7 +1129,7 @@ A: C++ has another pointer like type, they are called references
 	Advantages of constructors:
 	- default parameters
 	- overloading
-	- sanity checks (validate values), 
+	- sanity checks (validate values) 
 		
 	eg:
 		Struct Student {
@@ -1138,17 +1139,17 @@ A: C++ has another pointer like type, they are called references
 			}
 		}
 
-		Now we can do Student Jane{60,70} // where final is initialized as 0
+		Now we can do Student Jane{60, 70} // where final is initialized as 0
 		Student newKid; // all the marks are 0
 
 	Note:
-	- Every class comes with a default constructor (takes no arguments)
+		- Every class comes with a default constructor (takes no arguments)
 	eg: 
 		vec v; // something we did a couple days ago. 
 			   // this calls a default constructor. What it does is it runs through struct and default-constructs any fields that are objects
 			   // in case of vec, it does nothing because there are no objects, all we had are the two ints, which are not considered as objects
 
-	So if it does not do anything, how do you know that its there?
+	So if it does not do anything, how do you know that it's there?
 	-> You can check by taking away the dafault constructor
 
 	The built-in default constructor GOES AWAY if you provide your own costructor
@@ -1162,7 +1163,7 @@ A: C++ has another pointer like type, they are called references
 	};
 
 	Now if we run vec v, it won't compile. It compiled before, but it won't anymore, because the default constructor has been overwritten by our own constructor
-	// however, beofre, when we intialized structures the x and y were both uninitialized
+	// However, before, when we intialized structures the x and y were both uninitialized
 	// Remember how we mentioned that default contructor only initializes objects?
 	// What happens is that our default constructor, calls the other object's default contructor.. and so on
 
@@ -1177,9 +1178,9 @@ A: C++ has another pointer like type, they are called references
 		const int myConst=5;
 		int &myRef=z;
 	} // we can do this, but its probably not what we want
-	// because at the end we will end up with as many myCosnt as we created objects. We will have many duplicates
+	// because at the end we will end up with as many myCosnt as objects that we created. We will have way too many duplicates
 
-	But does every instance of myStudent need the same value of myConst
+	But does every instance of myStudent need the same value of myConst?
 	eg:
 	Struct myStudent {
 		const int id; // doesn't change, but you don't need the same one for all students
@@ -1194,33 +1195,33 @@ A: C++ has another pointer like type, they are called references
 	2) Fields are constructed // we want to put our intializations here!!!
 	3) Constructor body runs // its too late to intialize variables here because they happen in step 2
 
-	We do that using member intialization list (MIL)
+	We do that using MEMBER INITIALIZATION LIST (MIL)
 	eg:
 	Struct Student {
 		const int id;
 		int assns, midterm, final;
-		Struct (int id, int midterm, int final):
-			id{id}, assns{assns}, midterm{midterm}, final{final} { // before we start the construction body (right before the first { )
-			// there are rules tho. Shit before the curly brackets are fileds. Inside the brace brackets are the normal c++ scope rules and id, midterm, final are just parameters 		
+		Struct (int id, int midterm, int final):id{id}, assns{assns}, midterm{midterm}, final{final} { // before we start the construction body, right before the first "{"
+			// there are rules tho. Shit before the curly brackets are fileds. Inside the brace brackets are the normal c++ scope rules and id, assns, midterm, final are just parameters
 		}
-	}	
+	}
 
 	Notes: 
-	- notice that you can intialize any field this way, not only const and ref
-	- the fields are initialized in which they are declared in the class, not in order of MIL. // so that if one field uses a value of another, it still works
-	- MIL is sometimes more efficient then setting fields in teh body // because no matter what you do, step 2 is going to happen
+	- Notice that you can intialize any field this way, not only const and ref
+	- The fields are initialized in which they are declared in the class, not in order of MIL. // so that if one field uses a value of another, it still works
+	- MIL is sometimes more efficient then setting fields in the body // because no matter what you do, step 2 is going to happen
 		eg: you have a String name in your class. if you dont intialize String in your step 2, it will still happen because objects are always intialized in default constructor
 			so you will do the work twice, to first initialize string as null and then to give it an actual value
 	MORAL!!! embrace the MIL. You should be using it all the time in constructors
 	
-	What if a field is iitialized inline, and in the MIL?
+	What if a field is initialized inline, and in the MIL?
 
 	Struct vec {
 		int x=0, y=0;
 		vec(int x): x{x} {
 			....
 		}
-	} // MIL takees precedence overregular field initializations 
+	} // MIL takees precedence over regular field initializations
+	  // Basically overrides them with its own values 
 
 
 --------------------Uniform Initialization--------------------------
@@ -1229,10 +1230,12 @@ Old ways to initialize:
 
 	int x = 5;
 	string s = "hello";
+	
+	OR
 
-	int x (5);
+	int x(5);
 	string s("hello");
-	Student billy(60,70,80);
+	Student billy(60, 70, 80);
 
 New Preferred method:
 
@@ -1259,7 +1262,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 			......
 		}
 	};
-	This is dangerour because single argument constructors create implicit conversions // Not good, means c++ is changing types behind your back
+	This is dangerous because single argument constructors create implicit conversions // Not good, means c++ is changing types behind your back
 	Now we can do:
 		Node n{4}; // which is totally cool
 	but we can also do this:
@@ -1271,7 +1274,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 	Danger is:
 	- accidentally passing int to a function that is expecting a Node
 	- compiler will not signal an error
-	Good practive for these scenarios is to desable implicit conversion. To do that, make constructor explicit
+	Good practice for these scenarios is to disable implicit conversion. To do that, make constructor explicit
 	Struct Node {
 		...
 		explicit Node(int data): data{data}, next{nullptr} {
@@ -1279,78 +1282,77 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 		}
 	}
 	Node n{4}; // is ok
-	Node n = 4; // willl signal an error
+	Node n = 4; // will signal an error
  
 
-Note: Every class comes with these constructors
- - default constructor // default construts all fields that are objects
+	Note: Every class comes with these constructors
+ 	- default constructor // default construts all fields that are objects
 
-
- - copy constructor // just copies all the fields
-	- if you were to decide to build your own copy constructor, it would look like this:
-	Struct Student {
-		int assns, midterm, final;
-		Student (....) {...} // old stuff
-		Student (const Student &other): // you know its a copy constructor because it consumes a structure
-		assns {other.assns}, midterm {other.midterm}, final {other.final} {.....}
-		// this is exactly what the built in constructor does
-	}
-	Q: When do you need copy constructors that are different than default one?
-	Struct Node {
-		int data; 
-		Node next;
-		Node (int data, Node *next): data{data}, next{next} {.....}
-		.....
-	}
-	Node *n = new Node{1, new Node{2, new Node{3, nullptr}}};
-
-	Understanding memory alloc:
-	Stack:  Heap:
-	  n -> 1|--> 2| --> 3|nullptr
-
-	Node m = *n;
-	Node *p = new Node{*n}; // using copy constructor
-	
-	Understanding memory alloc:
-	Stack:  Heap:
-    m:1| -> 2| --> 3|nullptr
-	p ----> 1| --> 2| --> 3|nullptr
-	// the problem here is that you are not copying, but you are simply pointing to already existing nodes 
-
-	A simple copy of fields => only the first node is copied // known as a shallow copy
-	// this is not what you want, most likely your intent was to copy the entire list	
-
-	if you want a DEEP copy // copies the whole list
-	Then you have to write your own copy constructor
-
-	eg:
-	Struct Node {
-		int data; 
-		Node next;
-		Node (int data, Node *next): data{data}, next{next} {.....}
-		Node (cosnt Node &other): data{other.data}, next{other.next?new Node {*other.next}:nullptr} { 
-		// the trick is that when you call "new Node{*other.next}" is recurses, so other values are copied too 
-			....
+	- copy constructor // just copies all the fields
+		- if you were to decide to build your own copy constructor, it would look like this:
+		Struct Student {
+			int assns, midterm, final;
+			Student (....) {...} // old stuff
+			Student (const Student &other): // you know its a copy constructor because it consumes a structure
+			assns {other.assns}, midterm {other.midterm}, final {other.final} {.....}
+			// this is exactly what the built in constructor does
 		}
-		.....
-	}
+		Q: When do you need copy constructors that are different than default one?
+		Struct Node {
+			int data; 
+			Node next;
+			Node (int data, Node *next): data{data}, next{next} {.....}
+			.....
+		}
+		Node *n = new Node{1, new Node{2, new Node{3, nullptr}}};
 
-	The copy constructor is called:
-	1) when an object initializes another object
-	2) when an object is passed by value
-	3) when an object is returned by value (* not always - will discuss later)
+		Understanding memory alloc:
+		|_Stack_|__Heap___________________|
+		n -----> 1|* --> 2|* --> 3|nullptr
 
-	Note:
-	- can't override copy contructor
-	- should always gie it values by reference
+		Node m = *n;
+		Node *p = new Node{*n}; // using copy constructor
+	
+		Understanding memory alloc:
+		|_Stack_|__Heap___________________|
+		m -> 1|* ----> 2|* --> 3|nullptr
+		p -----> 1|* --> 2|* --> 3|nullptr
+		// the problem here is that you are not copying, but you are simply pointing to already existing nodes 
 
- 
- - copy assignment operator // 
- - destructor //
- - move assignemnt operator // 
+		A simple copy of fields => only the first node is copied // known as a shallow copy
+		// this is not what you want, most likely your intent was to copy the entire list	
+
+		if you want a DEEP copy // copies the whole list
+		Then you have to write your own copy constructor
+
+		eg:
+		Struct Node {
+			int data; 
+			Node next;
+			Node (int data, Node *next): data{data}, next{next} {.....}
+			Node (cosnt Node &other): data{other.data}, next{other.next?new Node {*other.next}:nullptr} { 
+			// the trick is that when you call "new Node{*other.next}" recurses, so other values are copied too 
+				....
+			}
+			.....
+		}
+
+		The copy constructor is called:
+		1) when an object initializes another object
+		2) when an object is passed by value
+		3) when an object is returned by value (*not always - will discuss later)
+
+		Note:
+		- can't override copy contructor
+		- should always give it values by reference
+
+	- copy assignment operator 
+	- destructor
+	- move assignment operator
 
 ----------------------Destructors---------------------------
-	when an object is destroyed:
+
+	When an object is destroyed:
 		- if stack allocated: goes out of scope
 		- if heap allocated: it is deleted
 	a mathod called the destructor runs
@@ -1364,13 +1366,14 @@ Note: Every class comes with these constructors
 
 	Q: When do we need more out of destructor class?
 	Node *np = new Node{1, newNode{2, newNode{3, nullptr}}};
-	// if no goes out of scope, only the pointer memory is reclaimed (because its on the stack), the list is leaked
+	// if np goes out of scope, only the pointer memory is reclaimed (because its on the stack), the list is leaked
+
 	If we say:
 	delete np; // this calls *np's destructor, which doesn't do anything 
-			   // 1| -> 2| -> 3|nullptr. When we run destructor, it kills only objects. 
+			   // 1|*-> 2|*-> 3|nullptr. When we run destructor, it kills only objects. 
 	So what happens is we delete *np, first node, but the rest of the list is leaked
 
-	Writing a destructor ("~" tilda is what denotes destructor):
+	Writing a destructor // "~" tilda is what denotes destructor
 	Struct Node {
 		......
 		~Node(){delete next;} // the way that this works is we delete next and call next's destructor, which deletes the next next etc...
@@ -1380,15 +1383,15 @@ Note: Every class comes with these constructors
 	Now: 
 	delete np; // deletes the whole list
 
----------------------Copy Assignment--------------------------
+-------------------------Copy Assignment--------------------------
 	the hardest and trickiest one (will be on the midterm, because everyone fucks it up)
 
-	Student billy{60,70,80};
-	Student jane=billy; // copy constructor
+	Student billy{60, 70, 80};
+	Student jane = billy; // copy constructor
 	
 	Now consider if we do this:
 	Student mary; // default constructor
-	mary = billy; // we are copying billy, but we are not constructing billy
+	mary = billy; // we are copying billy, but we are not constructing mary
 	// "=" is an instance of copy-assignment operator. If you don't provide your own, then it will use the compiler's one by default
 	// again, the default one might not be good for all the cases, so sometimes we have to write our own
 	// Usually, we need to write our own when we work with pointers. We want to avoid SHALLOW copies
@@ -1433,7 +1436,7 @@ Note: Every class comes with these constructors
 	Now this is apparently an even better version:
 	Struct Node {
 		.......
-		Node &operator=(const Node &other) {
+		Node &operator= (const Node &other) {
 			if (this == &other) return *this; // now if we encounter self-assignment, we will simply return pointer to this
 			// now we happpen to know that new doesn't 100% work, that it might fail. And if new fails, this function will bail out because we wont be able to set a value for next
 			// and next will keep pointing to old memory, which corrupts the list
@@ -1445,25 +1448,193 @@ Note: Every class comes with these constructors
 		}
 	}	
 	This is better because if new fails, next and data has not been cahnged yet, so the node is still in valid state
+	Also, the actual check for self assignemnt is not necessary here, because we are making a copy of other no matter what, since im wokrking of a copy, 
+	it doesn't matter if we are copying form somewhere else or from myself.
+
+	Now there is another version of operator Equal that does everything that the previous version, but is much simpler to write
+
+	#include <utility>
+
+	struct Node {
+		...
+		...
+		...
+		void swap (Node &other) {
+			using std::swap;
+			swap (data, other.data);
+			swap (next, other.next);
+		}
+
+		Node &operator= (const Node &other) {
+			Node tmp=other; //tmp = copy of other
+			swap (tmp); // me = copy of other, tmp = my old fields 
+			// now since tmp is stack allocated, it is destroyed when this is returned
+			return *this;
+		}
+	}
+
+-------------Rvalues and Rvalue operators-------------------
+
+	recall: an lvalue is anything with an address
+			an lvalue reference is like a constant pointer with automatic dereferencing and is aways initialized to an lvalue
+
+	Node n {1, new Node{2, nullptr}};
+	Node m = n; // copy operator
+	Node m2;
+	m2 = n; // copy assignment operator
+
+	Node plusOne (Node n) {
+		for (Node *p = &n; p; p = p->next) {
+			++p->data;
+		}
+		return n;
+	}
+	what we get from here is a copy of the original list with every value increased by one
+
+	Now we want to do this:
+	Node m3 = plusOne(n); // here we run the copy constructor
+
+	But when we run this, we get 2 calls to the Basic Contructor and 4 calls to the Copy constructor
+	- 2 calls to the Basic constructor because of the two nodes that we have
+	- the question is why the copy contructor gets called twice (2 on way in, 2 on way out)
+		- because there are 2 nodes in the list, it calls itself recursively, so for every node it runs twice
+
+	Now, if plusOne(n) is the other, what is it referencing? 
+	- here we are pointing to the temporary object that our compiler created for us, because we actually did not initialize anything
+	- so other is a reference to this temporary
+		- and the copy constructor deep copies the data from this temporary
 	
+	But the temporary is going to be discarded anyway, as soon as the statement Node m3 = plusOne(n); is done
+	- then why are we copying a temp object if it gets thrown away anyways? 
+	- wouldn't it be better if we could steal it instead?
+	- it very wasteful to copy from the temp
+	  
+	Example, one of your friends decided to quit CS246, but they have been taking great notes, whereas you didnt take any. 
+	Your friend tells you that you can find the notes in the library, and you like, nah bro if you throw them away, just give it to me.
 
-
-
-
- 
-
-
-
+	The key for this to work is you have to be able to tell, whether other is a reference to a temp or a standalone object
+	- up untill c++11 this was impossible, but not anymore
 	
+	Now we rvalue reference Node&& is reference to a temporary object (rvalue) or type Node
+	- idea is to copy from lvalue and steal from rvalue
+	- for that we have to write a ouw own contructor
+
+	struct Node {
+		Node (Node && other): 
+			data{other.data}
+			next{other.next} // now since the list is going to be destroyed because other is a temporary. We actually have to take values away from other
+		{ // this is called a move constructor
+			// idea is that instead of copying data, it should steal it
+			other.next = nullptr; // else the list is destroyed when other is destroyed
+		}
+	}
+
+	Now we get 
+	- 2 basic constructor calls
+	- 2 copy contructors 
+	- 1 move constructor
+	since move is not recursive, it will excecute in constant time always
+	** this is one of the trickier concepts in the course, make sure you understand it **
+
+	Since a need for move can arise when using copy operator, it could also arise whe using copy assignemmt
+	Node m;
+	m = plusOne(n); // assignment from temp
+
+	we can also write move assignment operator:
+	struct Node {
+		Node &operator= (Node && other) { // we want to steal other's data, but its assignent operator now, which means that i already have some of my own nodes
+			// so you have to destroy my old data. The other is already going to be destoryed, so you simply swap your data with his data
+			swap (other);
+			return *this;			
+		}
+	}
+
+	So if you don't define move constructor/assignment operator, the copy versions will be used.
+	if the move constructor/assignment is defined, it will replace all calls to the copy constructor/assignment
+	when the argument is temporary (rvalue)
 
 
+---------------------------Copy/Move Elision-----------------------
 
+	Now he will show us something that will blow our minds.. Great, just what i wanted!
 
+	Consider this function:
+	Vec makeAVec() {
+		return {0, 0}; // invokes a basic constructor
+	} 
+	Vec v = makeAVec(); // What runs? copy constructor? move constructor?
+	// well, he is not sure, so he is going to ask the compiler.. i didnt know they were that close.
+	Only the basic constructor runs, which is pretty messed up
+	
+	Its a specific behaviour of C++
 
+	In some circumstances, the compiler is allowed to skip calling copy of move constructors (but doesn't have to) // wtf is this ai?
+	In this example: makeAVec writes its result ({0, 0}) 
+	- idea is that it writes its result directly into the space occupied by V in the caller, rahter than copy or move it later
+	- though you dont need to know when this stuff happens
 
+	Another Example:
+	void doSomething(Vec v) {............}
+	Vec v is pass by value // copy or possibly the move constructor
+	doSomething(makeAVec()); // the result of makeAVec() is written directly into the parameter.
+	// this is allowed even if dropping contructor calls is going to change behaviour of the program (eg. if your constructor prints something)
 
+	Compilers obey something like an ASIF rule // you can do anything you want, as long as its doing something that looks like what you asked.
+	Lesson: make sure compiler is not confused by your code // you are not expected to know excetly when move/copy elision is allowed, jsut that its possible. 
 
+	If you need all of the contructors to run: g++ can help you
+	- g++14 -fno-elide-constructors // will run all of your contructors
+	// but we aware how much slower your code becomes. If your compiler is allowed to skip constructors, its probably skiping thousands on them
+	// not just one. So your program might slow down by a lot. (if your code is of decent length)
 
+	In summary: Rule of 5 (BIG 5)
+	- if you need a custom version of any one of:
+		copy constructor
+		copy assignment
+		destructor
+		move constructor
+		move assignemnt
+	- then USUALLY you need a custom version of all 5
+	// circumstances that requre you to change one of them, usually require others to be changed too.
 
+	Notice: operator= is a member frunction, not a standalone function; whereas for Vec it wasn't
+	- You usualyl have the choice to make operator a member or not.
+	- when your operator is a member, this is the first argument
+
+	struct Vec {
+		int x, y;
+		...	
+		Vec &operator+ (Vec &other)	{
+			return {x+other.x, y+other.y};
+		}
+		Vec &operator* (const int k) {
+			return {x*k, y*k}; // implements v*k			
+		}
+		// but how do we implement k * v?
+		// if the first argument is not Vec, then you write it as a standalone 
+	}
+
+	Vec operator+ (const int k, const Vec &v) {
+		reutrn v*k;
+	}
+
+	Special case of that is when you conside I/O operators
+
+	struct Vec {
+		ostream &operator<< (ostream &out) {
+		return out << x << " " << y; 
+		} // but this will make Vec the first arg;
+		// which is somehting you dont want to do for sure	 
+	}
+
+	SO DEFINE <<, >> OPERATORS AS STANDALONES
+
+	On the other hand, some operators, by the rules of c++, must be members:
+		operator=
+		operator[]
+		operator->
+		operator() // lets you treat objcets as if they were functions
+		operatorT // where T is a type. Implicit consversion operator
+	
 
 
