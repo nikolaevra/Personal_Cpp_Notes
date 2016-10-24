@@ -1476,7 +1476,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 -------------Rvalues and Rvalue operators-------------------
 
 	recall: an lvalue is anything with an address
-			an lvalue reference is like a constant pointer with automatic dereferencing and is aways initialized to an lvalue
+			an lvalue reference is like a constant pointer with automatic dereferencing and is aways initialized to lvalue
 
 	Node n {1, new Node{2, nullptr}};
 	Node m = n; // copy operator
@@ -1636,5 +1636,484 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 		operator() // lets you treat objcets as if they were functions
 		operatorT // where T is a type. Implicit consversion operator
 	
+-----------------------------Arrays of objects-------------------------------
+Struct Vec {
+	int x, y;
+	vec (int x, int y):x{x}, y{y}{
+		....
+	}
+}
+
+Vec *vp = new Vec[5];
+Vec moreVecs[3]; // these want to call the default constructor on eah item, but they can't because there are no default constructors
+
+Cant initialize arrays of elements.
+
+Options: 
+	1) writing a default consturctor
+	2) For stack arrays you can do the following:
+		Vec moreVecs[] = {{0,0}, {1,3}, {4,5}};
+	3) for Heap arrays the best thing to do is to create an array of pointers
+		Vec **np = new Vec*[5];
+		vp[0] = new Vec{0,0};
+		vp[1] = new Vec{1,2};
+		// for this method tho, you better remember to deallocate each pointer in the array and also the arrays themselves.
+		for (int i = 0; i < 5; i++) {
+			delete vp[i];
+		}
+		delete [] vp;
+
+---------------------------Constant objects-----------------------------------
+
+int f(const Node &n) {...........} // const objects arise often
+	// there are many functions that we invoke with constant variables, which means that there are going to be a lot of const objects too
+
+in const objects:
+	1) you can't change the fields
+	2) Can we call ethods on const objects? 
+		-> most of the methods can change the fields of the object, which violated const's rules
+			-> But whats the point of having const objects if you cant pass them to methods?
+				-> so you can call methods on objects, but they have to promise not to change the fields
+
+ex:
+struct Student () {
+	int assns, midterm, final;
+	float grade () const; // here we are making a promise that the method won't change any fields
+}
+	
+So compiler checks that const methods don't actually modify fields and ONLY CONST METHODS can be called on const objects
+You have to specify that methids is constant in both the header file and the code itself. The way it works is that 
+this becomes a const object pointer and you can't change it.
+
+
+----------------------------collecting usage statistics------------------------------
+Now consider:
+	Suppose you want to collect usege statistics on student objects, we want to find out if there is a particular student that is taking up all of our time
+
+	We are going to add a field that for each student will tell me how many times the method is called for a particular student
+
+struct Student () {
+	...
+	int numMethodCalls = 0;
+	float grade () const {
+		++numMethodCalls;
+		return .....
+	}		
+}	// but this method is not const anymore, so it will not compile
+// you can try removing the const, but then you cant use the code with const objects
+
+and then he says but but but.. this is what i want, not what i meant
+
+But mutating numMethodCalls, doesn't impact the student object that is being passed. So we want to make destinction between student and non student objects
+	so we have to specify that mutating the numMethodCalls affects only the physical constness of Student objects, not the logical constness.
+	
+What we want to do is to be able to update numMethodCalls, even if the object is const.
+	to do that, you declare field mutable
+
+struct Student () {
+	...
+	mutable int numMethodCalls = 0;
+	float grade () const {
+		++numMethodCalls;
+		return .....
+	}		
+}
+// mutable fields can be changed, even if the object is const
+
+------------------------Static fields & methods----------------------------------
+
+what if instead of numMethodCalls tracking the number of methods calls for each particular student, we track the method calls over all students
+OR
+what if we wanted to know how many actual students we have created?
+	For this we have the static members - a member that is associated with a class itself rather than a particular object. 
+
+struct Student () {
+	...
+	static int numInstances;
+	Student (int assns, int midterm, int final): assns{assns}, midterm{midterm}, final{final} {
+		++numInstances;
+	}
+} // now there is one field shared between all of the objects, which means that if one of the objects update it, it will update everywhere
+
+But it is not as simple as that:
+	basically what we have done is we created a global variable, but within the scope of the class, so it can't be accessed from outside
+
+So if im creating a global variable, does this line "static int numInstances;" declare a global variable or define it?
+	If it does define it, then we are creating a new variable on every new instance. 
+	if it is defined, then we will have way too many copies of the same variable
+	if we declare it, then its a question who actually defines it in the first place
+
+So we have to include it in our .cc file:
+	int Student::numInstances=0; // in.cc file
+Static fields must be defined, external to the class
+
+Now, moving on to the methods:
+	static member functions, follow similar set of rules, they dont depend on a specific instance
+	- which means that static methods don't have a "this" parameter
+	- what can static methods do then? 
+		- They can access static fields, because those don't depend on specific objects
+		- They can also call other static methods
+
+Ex:
+struct Student () {
+	...
+	static int numInstances;
+	....
+	static void printNumInstances() {
+		cout << numInstances << endl;
+	}
+};
+
+Student billy {60,70,80};
+Student jane {60,70,90};
+Student::printNumInstances(); // will print 2
+// notice that there is no student attachment, you simply refer to Student struct
+
+----------------------------Intervarians+Encapsulation-------------------------------
+struct Node () {
+	int data;
+	Node *next;
+	Node (int data, Node *next);
+	....
+	~Node() {delete next;} 
+}
+Node n1{1, new Node {2, nullptr}}
+Node n2{3, nullptr};
+Node n3{4, &n2};
+
+What happens when these go out of scope?
+	- n1 runs its destructor, whole list is deleted OK
+	- n2, n3 go out of scope: n3's destructor attempts to delete the n2, but the n2 is on the stack, not the heap
+	  and we get undefined behaviour, maybe a crash.
+
+So Class Node relies on an assumption for its proper operation, and the assumption was that next was either a null pointer or allocated by new
+ - this is what an invariant is called.
+	- this is a logical statement that holds true, upon which Node realies.
+
+But the problem is that while we are relying on it, we can't guarantee that it will be true all the time. You can't trust the user to use it properly
+In fact, you cant't enforce any invariants // user can interfere with our data
+
+Ex:
+you are writing stack:
+ - Invariant: last item push is the first thing you pop
+ - but as long as you give your user access to rearrange the underlying data.
+ - this makes your ensuring that your program works very difficult
+ - hard to reason about programs if you can't rely on invariants
+
+To enforce invariants, we introduce what is called encapsulation
+ - idea is that we want client to see out objects as black boxes, or capsules // something that is sealed away from the user
+ implementation details are sealed away, you can only interact via provided methods
+ - and thats how we get abstraction and regain control over our objects
+
+Ex:
+struct Vec {
+	Vec (int x, int y); // by default things are public tho
+	private: // stuff under private can't be accessed outside the structure
+		int x, y;
+	public: // stuff under public can be accessed by anyone
+		Vec operator+ (.....);
+		.
+		.
+		.
+} 
+
+In general: want fields to be private and only the methods shuold be public
+ - But this is very error prone, so we would instead want to have default visibility as private
+	- if the default visibility was private, then all the C will break, because it doesn't have private mode
+
+Then c++ people decided to switch from struct to class
+Ex:
+class Vec {
+	Vec (int x, int y);
+	int x, y;
+	public: // stuff under public can be accessed by anyone
+		Vec operator+ (.....);
+		.
+		.
+		.
+} 
+
+That is the major difference between Classes and Structs, where the default visibility is private
+ - so we should use classes from now on
+
+-------------------------Encapsulated Liked Lists----------------------------
+
+Today we want to fix our linked list class
+
+// list.h
+
+Class List { // we want to take advantage of the scoping mechanism of classes
+	Struct Node; // we put this inside of list so that its scoped inside a list
+	Node *theList = nullptr;
+	public:
+		void addToFront (int n);
+		int ith(int n) const;
+		~List () {delete theList};
+}
+So now we have a nested private class
+- only accessinble within list
+- so the outsiders of this class, can't even use the word Node. All they can do is use the functions that we give them
+
+// list.cc
+#include "list.h"
+
+struct List::Node { // nested class
+	int data;
+	Node *next;
+	
+	Node (...) {....}
+	~Node (...) {....}
+};
+
+void List::addToFront(int n) {
+	theList = new Node {n, theList};
+}
+
+int ith(int i) const {
+	Node *cur = theList;
+	for (int n = 0; n < i && cur; ++n, cur = cur->next);
+	return cur->data;  
+}
+
+Only list can create/manipulate Node objects
+- Can guarantee the invariant that next is either a nullptr or allocated by new.
+
+// So this gets the job done to secure creating bad objects with Nodes. But he is not satisfied
+// "While we gained here, we have also lost." Thats deep tho...
+
+Now we can't traverse the list from node to node, as we would in a linked list
+// now this is not good because it becomes a O(n^2) time.
+// we want to access the entire list in constant time, like you would normally.
+
+But we can't expose the nodes, or we lose encapsulation
+
+------------------------------SE Topic: Design Patterns----------------------------
+
+The idea that has come up a lot of times and the solutions that have been studied and proven to work well
+- cartain problems that arise frequenty 
+- experts keep track of its solutions and reuse the best ones in similar situations
+- this is the essence of a Design pattern: If you have problem X, solution Y may fix it
+
+Was coined by 4 individuals who wrote the first book of design patterns
+- they studied OOP design and wrote a book about it
+
+So our solution to the problem that we have right now, is known as the interator pattern. 
+- the idea is to not to expose the Nodes to keep encapsulation
+- we will create another class that will manages the access to Nodes
+- this class will be based on the abstraction of a pointer
+- we will walk the list without exposing the actual pointers
+
+Inspiration to use this when looping over a list:
+for (int *p = a; p != a+n; ++p) {
+	....*p..... // access the item using the pointer
+}
+
+Class List { // we want to take advantage of the scoping mechanism of classes
+	Struct Node; // we put this inside of list so that its scoped inside a list
+	Node *theList;
+
+	public:
+
+		class Iterator {
+			Node *p;
+
+			public:
+				explicit Iterator(Node *p): p{p} {......}
+				int  &operator*() { // the fact that this returns the reference means that we don't get a copy of the list, but the list itself.
+									// so we can actually modify it later
+					return p->data;
+				}
+				int &operator++() {
+					p = p->next;
+					return *this;
+				}
+				bool operator== (const Iterator &other) {
+					return p==other.p;
+				}
+				bool operator!= (const Iterator &other) {
+					return !(*this==other);
+				}
+		} // end of the iterator class
+		// this is not the end, we still have to make methods that will tell us where is the start and where is the end of the list
+
+		Iterator begin() {
+			return Iterator{theList};		
+		}
+		Iterator end() {
+			return Iterator{nullptr};
+		}
+
+		void addToFront (int n);
+		int ith(int n) const;
+		~List () {delete theList};
+}
+
+
+Client:
+-------
+int main() {
+	List l;
+	l.addtoFront(1);
+	l.addtoFront(2);
+	l.addtoFront(3);
+
+	for (List::Iterator it = l.begin(); it != l.end(); ++it) {
+		cout << *it << endl;
+	}
+}
+
+// Most importantly, we keep the encapsulation
+// and we get all of the operations in O(1)
+// which means that this iteration of the list is O(n)
+
+If you have an objection that this is way too much stuff to write down, then we will see some shortcuts now
+
+AUTOMATIC TYPE DEDUCTION:
+auto x = y; // idea is that im too lazy to write out the type for x;
+// but since we know that x is being initialized to y, we will simply match their types
+// auto has existed for a long time, but noone used it, so they recycled it for a new purpose
+// auto used to be the opposite of static, meant that variable was on the stack, but all of the variables are on the stack by default
+// so now auto has a new meaning.
+
+Using automatic type deduction:
+for (auto it = l.begin(); it != l.end(); ++it) {
+	cout << *it << endl;
+}
+
+RANGE-BASED FOR LOOP:
+for (auto n:l) {
+	cout << n << endl;
+}
+// this is available for any class with methods begin(), end() that produce Iterators
+// Iterator must support !=, ++(prefix), unary *
+
+The only thing is that n is by value declaration, so n is the copy of the list, so you can change the n, but not the list.
+
+If you actually want to modify list elements, or save copying memory:
+for (auto &n:l) {
+	cout << *n << endl;	
+	++n;
+} 
+
+!!!!!Iterators is a big topic in C++, you have to really understand those!!!!!
+
+Coming back to ENCAPSULATION: there is still one little loophole that we have to close
+We dont want clients to create their own Iterators
+
+List client can create Iterators directly
+- the only iterator they can create is null one
+auto it = List::Iterator{nullptr};
+- this violates encapsulation, client should be using begin(), end()
+
+We can make the Iterator's constructor private for this purpose:
+- then the client can't call List::Iterator(.....)
+- but this also menas that List can't call it
+
+Solution we are looking for is to give List priveledged access to Iterator
+- you make List a friend
+
+Class List {
+	Struct Node;
+	Node *theList;
+
+	public:
+		class Iterator {
+			Node *p;
+			explicit Iterator(Node *p): p{p} {......}
+			
+			public:
+				int  &operator*() { 
+					return p->data;
+				}
+				int &operator++() {
+					p = p->next;
+					return *this;
+				}
+				bool operator== (const Iterator &other) {
+					return p==other.p;
+				}
+				bool operator!= (const Iterator &other) {
+					return !(*this==other);
+				}
+				friend class List; // list has access to all members of Iterator
+				// can also make a specific member of a class a friend too, but we will cover that later
+		}
+
+		Iterator begin() {
+			return Iterator{theList};		
+		}
+		Iterator end() {
+			return Iterator{nullptr};
+		}
+
+		void addToFront (int n);
+		int ith(int n) const;
+		~List () {delete theList};
+}
+
+So now List can still create Iterators, but the client can only create them by calling begin() and end()
+look into the repository for an example: "~/cs246/1169/lectures/se/"
+// wow this shit is mindblowing
+
+ADVICE: you want to make as little friends as possible
+// only make a friend that can do something for you otherwise it will weaken encapsulation and changing one thing will make you change everything
+// Lushman's advice for life..
+
+ONCE AGAIN:
+- Keep your fields private 
+- what if you want to give access, use accessor and mutator methods
+
+Ex:
+class Vec {
+	int x, y;
+	public:
+		int getX() const {return x;} // accessor method
+		void setY(int newY) {y= newY;} // mutator method
+};
+// This way you keep control of the structure and can validate parameters that are being passed
+
+What about the operator<< 
+- needs x, y
+- can't be a member
+- if you don't want to give access to getX(), getY() to everyone
+
+You should then make operator<< a friend function
+// vec.h
+class Vec {
+	.....
+	public:
+		friend std::ostream &operator<< (std::ostream &out, const Vec &v) // this is a friend intialization, you can still customize the &operator<< function
+	.....
+};
+
+// vec.cc
+ostream &operator<< (ostream &out, const Vec &v) {
+	return out << v.x << ' ' << v.y;
+}
+
+-----------------------------Tools topic: Make-------------------------------
+Separate compilation:
+- g++14 -c list.cc
+  g++14 -c node.cc
+  g++14 -c iter.cc
+  g++14 -c main.cc
+  g++14 list.o, node.o, iter.o, main.o -o myprogram
+- we do this so we dont have to recompile
+- once you move on to bigger projects, you dont want to recompile every single file
+
+But how do you know what has to be recompiled?
+- use technology bruh, with make
+
+What make does, is it keeps track of what parts of your programs needs to be changed
+- it needs a makefile
+- but then compilation is 10000000000000000000 times faster and more convenient
+
+Create a makefile that says which files depend on which other files
+
+Ex:
+what myprog depends on: 
+	main.o, list.o, node.o, iter.o // idea is that my program depends on these and if any of those change, we have to rebuild
+how do you rebuild it: 
+	g++-5 -std=c++14 main.o, list.o, node.o, iter.o -o myprog // NOTICE: you have to start this line with TAB, not Spaces
 
 
