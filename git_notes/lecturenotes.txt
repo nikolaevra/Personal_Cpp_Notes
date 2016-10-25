@@ -949,8 +949,8 @@ A: C++ has another pointer like type, they are called references
 		for those things that occupy space. 
 
 	eg: if we take the Matrix functions from before and make them into proper files
-	**************vec.h******************
-	__________________________________________
+	**************vec.h*************************
+	____________________________________________
 	struct Vec {
 		int x, y;
 	}
@@ -1006,7 +1006,7 @@ A: C++ has another pointer like type, they are called references
 	.o file is an object file all compiled, but not liked. 
 	To do linking, use 
 		g++14 vec.o main.o -o main
-	now you can sun ./main
+	now you can run ./main
 
 	Notice, we didn't compile .h file. 
 
@@ -1018,11 +1018,11 @@ A: C++ has another pointer like type, they are called references
 		Global var: int globalNum;
 	You should never include it in the .h file because every time the .h file is included compiler will make a copy of it
 	You have to define it in .h, but not initialize it using extern global var;
-	Initialize the vatrible in a .cc file global var = 14;
+	Initialize the variable in a .cc file global var = 14;
 
 ------------------------Including shit in your modules---------------------------
 
-	imagine you have vec.h, vec.cc linalg.h, linalg.cc, main.cc
+	imagine you have vec.h, vec.cc, linalg.h, linalg.cc, main.cc
 		!!!!!!this won't compile!!!!!!!!! 
 	main.cc, linalg.cc include linalg.h, vec.h
 	linalg.h includes vec.h
@@ -1053,7 +1053,7 @@ A: C++ has another pointer like type, they are called references
 	Midterm coming up
 	-> Better study, do not be behind on aynthing! gotta understand week 1 content
 
------------------OOP Classes--------------
+-----------------------------------------OOP Classes------------------------------
 	- is different from structs because you can put functions inside of classes
 	
 	eg:
@@ -1489,6 +1489,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 		}
 		return n;
 	}
+
 	what we get from here is a copy of the original list with every value increased by one
 
 	Now we want to do this:
@@ -1568,9 +1569,9 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 	
 	Its a specific behaviour of C++
 
-	In some circumstances, the compiler is allowed to skip calling copy of move constructors (but doesn't have to) // wtf is this ai?
+	In some circumstances, the compiler is allowed to skip calling copy or move constructors (but doesn't have to) // wtf is this?
 	In this example: makeAVec writes its result ({0, 0}) 
-	- idea is that it writes its result directly into the space occupied by V in the caller, rahter than copy or move it later
+	- idea is that it writes its result directly into the space occupied by V in the caller, rather than copy or move it later
 	- though you dont need to know when this stuff happens
 
 	Another Example:
@@ -1598,7 +1599,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 	// circumstances that requre you to change one of them, usually require others to be changed too.
 
 	Notice: operator= is a member frunction, not a standalone function; whereas for Vec it wasn't
-	- You usualyl have the choice to make operator a member or not.
+	- You usually have the choice to make operator a member or not.
 	- when your operator is a member, this is the first argument
 
 	struct Vec {
@@ -1645,9 +1646,9 @@ Struct Vec {
 }
 
 Vec *vp = new Vec[5];
-Vec moreVecs[3]; // these want to call the default constructor on eah item, but they can't because there are no default constructors
+Vec moreVecs[3]; // these want to call the default constructor on each item, but they can't because there are no default constructors
 
-Cant initialize arrays of elements.
+Can't initialize arrays of elements.
 
 Options: 
 	1) writing a default consturctor
@@ -1670,7 +1671,7 @@ int f(const Node &n) {...........} // const objects arise often
 
 in const objects:
 	1) you can't change the fields
-	2) Can we call ethods on const objects? 
+	2) Can we call methods on const objects? 
 		-> most of the methods can change the fields of the object, which violated const's rules
 			-> But whats the point of having const objects if you cant pass them to methods?
 				-> so you can call methods on objects, but they have to promise not to change the fields
@@ -1682,13 +1683,13 @@ struct Student () {
 }
 	
 So compiler checks that const methods don't actually modify fields and ONLY CONST METHODS can be called on const objects
-You have to specify that methids is constant in both the header file and the code itself. The way it works is that 
+You have to specify that method is constant in both the header file and the code itself. The way it works is that 
 this becomes a const object pointer and you can't change it.
 
 
 ----------------------------collecting usage statistics------------------------------
 Now consider:
-	Suppose you want to collect usege statistics on student objects, we want to find out if there is a particular student that is taking up all of our time
+	Suppose you want to collect usage statistics on student objects, we want to find out if there is a particular student that is taking up all of our time
 
 	We are going to add a field that for each student will tell me how many times the method is called for a particular student
 
@@ -1702,7 +1703,7 @@ struct Student () {
 }	// but this method is not const anymore, so it will not compile
 // you can try removing the const, but then you cant use the code with const objects
 
-and then he says but but but.. this is what i want, not what i meant
+and then he says "but but but.. this is what i want, not what i meant"
 
 But mutating numMethodCalls, doesn't impact the student object that is being passed. So we want to make destinction between student and non student objects
 	so we have to specify that mutating the numMethodCalls affects only the physical constness of Student objects, not the logical constness.
@@ -1777,6 +1778,7 @@ struct Node () {
 	....
 	~Node() {delete next;} 
 }
+
 Node n1{1, new Node {2, nullptr}}
 Node n2{3, nullptr};
 Node n3{4, &n2};
