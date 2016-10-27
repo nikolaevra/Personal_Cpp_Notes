@@ -1220,7 +1220,7 @@ A: C++ has another pointer like type, they are called references
 		vec(int x): x{x} {
 			....
 		}
-	} // MIL takees precedence over regular field initializations
+	} // MIL takes precedence over regular field initializations
 	  // Basically overrides them with its own values 
 
 
@@ -1287,9 +1287,13 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 
 	Note: Every class comes with these constructors
  	- default constructor // default construts all fields that are objects
-
 	- copy constructor // just copies all the fields
-		- if you were to decide to build your own copy constructor, it would look like this:
+	- copy assignment operator 
+	- destructor
+	- move assignment operator
+
+-----------------------------------Copy Operator----------------------------
+	if you were to decide to build your own copy constructor, it would look like this:
 		Struct Student {
 			int assns, midterm, final;
 			Student (....) {...} // old stuff
@@ -1298,12 +1302,15 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 			// this is exactly what the built in constructor does
 		}
 		Q: When do you need copy constructors that are different than default one?
+		A: Obviously when we are working with linked lists, because that what they do, ruin your life
+
 		Struct Node {
 			int data; 
 			Node next;
 			Node (int data, Node *next): data{data}, next{next} {.....}
 			.....
 		}
+
 		Node *n = new Node{1, new Node{2, new Node{3, nullptr}}};
 
 		Understanding memory alloc:
@@ -1330,7 +1337,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 			int data; 
 			Node next;
 			Node (int data, Node *next): data{data}, next{next} {.....}
-			Node (cosnt Node &other): data{other.data}, next{other.next?new Node {*other.next}:nullptr} { 
+			Node (const Node &other): data{other.data}, next{other.next?new Node {*other.next}:nullptr} { 
 			// the trick is that when you call "new Node{*other.next}" recurses, so other values are copied too 
 				....
 			}
@@ -1346,15 +1353,11 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 		- can't override copy contructor
 		- should always give it values by reference
 
-	- copy assignment operator 
-	- destructor
-	- move assignment operator
-
-----------------------Destructors---------------------------
+------------------------------Destructors------------------------------------
 
 	When an object is destroyed:
-		- if stack allocated: goes out of scope
-		- if heap allocated: it is deleted
+		- if stack allocated -> goes out of scope
+		- if heap allocated -> it is deleted
 	a mathod called the destructor runs
 
 	Every class has a default destructor // it calls destructors on all the object fields, just like the constructor, but the opposite
@@ -1687,7 +1690,7 @@ You have to specify that method is constant in both the header file and the code
 this becomes a const object pointer and you can't change it.
 
 
-----------------------------collecting usage statistics------------------------------
+----------------------------Collecting usage statistics------------------------------
 Now consider:
 	Suppose you want to collect usage statistics on student objects, we want to find out if there is a particular student that is taking up all of our time
 
@@ -1790,7 +1793,7 @@ What happens when these go out of scope?
 
 So Class Node relies on an assumption for its proper operation, and the assumption was that next was either a null pointer or allocated by new
  - this is what an invariant is called.
-	- this is a logical statement that holds true, upon which Node realies.
+	- this is a logical statement that holds true, upon which Node relies.
 
 But the problem is that while we are relying on it, we can't guarantee that it will be true all the time. You can't trust the user to use it properly
 In fact, you cant't enforce any invariants // user can interfere with our data
@@ -1803,7 +1806,7 @@ you are writing stack:
  - hard to reason about programs if you can't rely on invariants
 
 To enforce invariants, we introduce what is called encapsulation
- - idea is that we want client to see out objects as black boxes, or capsules // something that is sealed away from the user
+ - idea is that we want client to see our objects as black boxes, or capsules // something that is sealed away from the user
  implementation details are sealed away, you can only interact via provided methods
  - and thats how we get abstraction and regain control over our objects
 
@@ -1823,7 +1826,7 @@ In general: want fields to be private and only the methods shuold be public
  - But this is very error prone, so we would instead want to have default visibility as private
 	- if the default visibility was private, then all the C will break, because it doesn't have private mode
 
-Then c++ people decided to switch from struct to class
+Then c++ people decided to switch from struc t to class
 Ex:
 class Vec {
 	Vec (int x, int y);
@@ -2117,5 +2120,279 @@ what myprog depends on:
 	main.o, list.o, node.o, iter.o // idea is that my program depends on these and if any of those change, we have to rebuild
 how do you rebuild it: 
 	g++-5 -std=c++14 main.o, list.o, node.o, iter.o -o myprog // NOTICE: you have to start this line with TAB, not Spaces
+
+class Test:public Book {
+	public:
+	Text(string title, string author, int numPages, string topic): Book{title,author,numPages}, topic{topic} {} 
+}
+
+// Rule: if the super class had no defult constructor, subclass must invoke the superclass constructor in its MIL
+
+still you may be thinking it is a litttle strange that the superclass fields are not visible for subclass, he will explain it later
+and if you want to give the subclass access to certain superclass members, there is a way to do it:
+	- you use protected visiblity
+	
+class Book {
+	protected: 
+	string title, author;
+	int numPages;
+};
+
+class Text:public Book {
+	string topic; // since authors can change we need create a method for that
+	public:
+	void addAuthor(string auth) {
+		author += auth;
+	}
+} // although this is occaionally useful, its usually not a good idea to give subclassses unlimited access to fields
+
+So why is it a bad idea? even though its protected? 
+ - suppose you keep a collection of your book and suppose that you ust hate one author so much
+ - You dont want to have any books by that author. You provide an inveriant that removes all appearences of that authors name
+ - then, you can protect your class all you want from the bad author, but if your subclass can change fields of the class, then
+   you have broken encapsulation because i will be able to change the author name of the existing classes
+
+Author of C++ has regretted adding protected!!
+
+But if you do want your subclass to access certain fields sometimes? 
+ - make sure you make your fields private and provide protected methods that do your getting and setting
+ - this way you still have control of what users can do and you can still enforce your invariants
+
+class Book {
+	string title, author;
+	int numPages;
+	protected:
+	string getTitle() const;
+	void setAuthor(string auth);
+	public:
+	Book();
+	bool isItHeavy() const;
+}
+
+-----------------------------Relationship among text, Book called 'is-a'-----------------------------
+ - a text is a book
+ - a comic is a book
+
+	       Book 	
+			|
+	-----------------
+	|				|
+   text           comic
+
+Method isItHeavy - when is a book heavy?
+ - for ordinary Books -> 200 pages means heavy
+ - for textbooks (text) -> 500 pages means heavy
+ - for comics -> 30 pages means heavy
+
+So we go ahead and write our class Book
+
+class Book {
+	protected:
+	int numPages; // although not a good idea, we will do it this time
+	public:
+	bool isItHeavy() const {
+		return numPages > 200;	
+	}
+}
+
+class Comic: public Book {
+	public:
+	.....
+	bool isItHeavy() const{
+		return numPages > 30;	
+	}
+}
+
+Now lets use these objects:
+Book b{"A small book", "...", 50};
+Comic c{"A big comic", "...", 40};
+
+cout << b.isItHeavy() // false
+	 << c.isItHeavy() // true
+
+now comes the interesting part
+	- we said that inheritance type of 'is-a'
+	- and if comic is a book ,then there are certain things we can do
+
+Book b = Comic{"A big comic", "...", 40}; // initializing a books using a comic object
+// this is allowed, but its not what we want
+
+Q: is b heavy now? or another way of saying it, which version of isItHeavy() runs? (Comic's method or Book's method)
+A: b.isItHeavy() will give you false, book's isItHeavy() runs
+
+Now the question is Why? 
+A: imagine what happens in memory when we do this
+Book will look something like this:
+ - title
+ - author
+ - numPages
+And the comic book is going to look like this:
+ - title
+ - author
+ - numPages
+ - hero
+
+the compiler has enough space to only keep a book
+	- so what we are trying to do is to fit an object with 4 fields into a hole of 3 fields
+		- trying to fit a comic object where there is oly space for a book object
+	- at this point you lose the field hero and then you simply treat your comic as a book
+
+This phenomenon is called SLICING // the hero field is chopped off and comic is coerced into a book
+
+so b = Comic {...};
+ - converts comic into a book and so Book::isItHeavy() runs
+// if this was the other way, then we'd have memory leaks all the time
+
+Q: Now you may wonder, what if the comic has the same amount of fields as the Book?
+A: yes, as long as you initialize super class using a cublass, it will be sliced anyways and the superclass' members will run
+
+Q: Can you initialize a comic with a book? 
+A: the question then is who is the hero? and since you can't answer this, no you can't
+
+Q: what constructor gets called? 
+A: "I suppose its actually a move constructor"
+
+This idea is based around limited memory spaces, but if we work with pointers, things change all of the sudden, because we dont move memory around as much
+ - when accessing objects through pointers
+ - slicing is uneccesary
+ - and it doesn't happen
+
+Ex:
+Comic c {..., ..., 40, ...};
+Book *pb = &c;
+Comic *pc = &c;
+
+cout << pc->isItHeavy() // true
+	 << pb->isItHeavy() // false
+
+ - Still, it shows that its not heavy and this time there was no slicing, we created a comic book and just pointed two pointers at it
+ - Same objects behaves differently depending on what kind of pointer is pointing at it
+
+Q: So what is the rule? what determines what method is run?
+A: The compiler is using the type of the pointer or refrence to decide which isItHeavy() to run
+	- it does not consider the actual type of the object
+
+And in many ways, this outcome is unintuitive, it means a comic is only a comic if it is pointed at by a comic pointer
+// might not be what we want
+
+Imagine you sitting on your bed and pick up a heavy comic
+ - you dont say that oh this is a light comic that im viewing as a book
+ - you say oh, its a heavy comic
+
+How do we make comic, even when pointed at by a book?
+ - Declare the method VIRTUAL!
+
+class Book {
+	....
+	public:
+		Book(....);
+		virtual bool isItHeavy() const {.....};
+};
+
+// and then in your subclass
+
+class Comic:public Book {
+	....
+	public:
+		Comic(....);
+		bool isItHeavy() const override {....};
+}
+
+// Now, if we do the same thing:
+Ex:
+Comic c {..., ..., 40, ...};
+Book *pb = &c;
+Book &rb = c;
+Comic *pc = &c;
+
+cout << pc->isItHeavy() // true
+	 << pb->isItHeavy() // true
+	 << rb.isItHeavy() // true
+
+Override is new in C++ // only since v.11
+
+Ex:
+Book *myBooks[20];
+.
+.
+.
+for (int i = 0;, i < 20, i++) {
+	cout << myBooks[i]->isItHeavy() << endl;
+}
+
+Accomodates multiple types under one abstraction -> POLIMORPHYSM ("many forms")
+
+Now that we have inheritance, we have to redo all of the BIG 5
+
+-----------------------Inheritance: Destructor------------------------
+
+class X {
+	int *x;
+	public:
+		X(int n): x{new int[n]} {}
+		~X() {delete [] x}
+};
+
+class Y: public X{
+	int *y;
+	public:
+		Y(int m, int n): X{n}, y{new int[m]}
+		~Y() {delete [] y;} // notice how we don't delete X, even though it inherits it. 
+};
+
+Q: Not deleting X, is that wrong?
+A: There is a big problem if we did have a leak, because x is private in X
+	- when you create an object, the super class constructor runs first
+	- when you destroy an object, the superclass destructor runs last
+
+What if we do this now? 
+Ex:
+X *myX = new Y{10, 20}
+delete myX;
+// he ran it and nothing crushed
+// he ran it with valgrind and found a memory leak
+// only x was freed, not the y
+
+He deleted x poitner and x's destructor ran. But he destructor for y didn't run // since its a subclass of x
+ - so we didnt have a problem, when we deleted x, through y's destructor
+ - but we do have a problem when we delete y using x's destructor // because y is not a superclass of x
+
+Q: How do you make sure that the deletion through the superclass will call subclasses' destructor?
+A: Make the destructor virtual
+
+class X {
+	int *x;
+	public:
+		X(int n): x{new int[n]} {}
+		~X() virtual {delete [] x}
+}; // you dont have to add override to the destructor in Y
+
+So there is a piece of advice:
+ - ALWAYS make the destructor virtual in classes that are meant to have subclasses
+ - this is true, even if the destructor is not doing anything (has an empty body)
+
+On the other hand, if a class is not meant to have subclasses, declare it final:
+
+class Y final:public X {
+	....
+	....
+	....
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
