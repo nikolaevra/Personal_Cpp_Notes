@@ -1,0 +1,151 @@
+---------------------------Pattern matrching in text files--------------------------
+ - egrep (extended pattern file, prints every line in the file that is matching the pattern)
+
+ex: print every line in the file that constains cs246
+-> egrep cs246 file.txt
+ex: how many lines in file that constain cs 246 or cs246?
+-> egrep "cs246|cs 246" file.txt | wc -l
+ex: how many lines that contain cs246 or CS246?
+-> egrep '(cs|CS) 246' file.txt | wc -l
+
+Round brackets are needed for or statements like: (a|b|c)
+An equivalent of that with square brakets is: [a-c] or [abc]
+ - [] mean "any character in the brackets"
+
+
+? = 0 or 1 preceding expressions
+* = 0 or more of preceding expressions
+. = matches a single character
+^ = match beginning of a line
+$ = match end of a line
++ = 1 or more occurences of preceding expression (gives anything non-empty)
+
+ex: list files in teh current directory with names constaining only one a
+-> ls | egrep "^[^a]*a[^a]*$"
+// start with as many "non-a"s as you can find
+// find one a
+// find as many "non-a"s as you can find
+
+----------------------------------Permissions----------------------------
+
+new flag for ls "-l" gives you the long version of the directory:
+
+eg:
+-rw-r----- 1 j2smith j2smith 25 Sep 9 15:37 abc.txt
+
+Char 1:
+type - what kind of file is it.
+	// - an ordinary file. 
+	// d is a directory 
+
+Next 9 characters are permissions, 3 groups of 3 bits 
+	1st 3 are user bit (file owner)
+	2nd 3 are group bits 
+	3rd 3 are the other bits (for all other people)
+they tell you what each class of user can do to a file or directory
+
+Next we have # of links:
+	owner - user that owns the file
+	groups - grops is how linux allows file sharing. a user can belong to 1+ 				groups 
+             - a single file can be associated with one group
+
+Then we have:
+	size - file size in bytes
+	last modified - last modified timestamp
+	name - filename
+
+Q: What would happen if you are inside a directory where you have r bit disabled? 
+A: its like being in a dark room. if you know what is in the directory, you can get 	to it, if you dont, you can only try guessing
+
+A: On the other hand, if the directory bit is not set it is like a brick wall.
+Means that you have no acces to the directory nor to any file or subdirectory.
+
+Now consider changing permissions 
+
+command: chmod [mode] [file] 
+// mode is u for user
+	     g for group
+	     o for other
+	     a for all,
+		 
+// + to add permission
+   - to remove permission
+   = to set permission
+ 
+Ex: if you want to give everyone permission to read file
+--> chmod o+r [file]
+
+Ex: if you want to make everyones permission read and execute 
+--> chmod a=rx [file] // need equal because someone might already have write permission and you want to take that away from them
+
+Ex: you want to give a user full control
+--> chmod u=rwx [file] // or u+rwx file
+// file/directory owner can always change the permissions so can root
+
+---------------------------------Shell scripts---------------------------------
+
+start with a "#!/bin/bash" // called a shebang line
+
+variables:
+x = 1;
+echo $# // check how many arguments passed to the script
+echo $x;
+// use $ when fetching a variable, but not when setting it
+// all shell variables are strings
+
+
+Special variables for Scripts: $1, $2, $3 .... $n 
+// these values represent command line argumens that you pass to your script
+
+Ex: Check wether a word is in the dictionary (./isitaword hello)
+	#/!bin/bash
+	egrep "^$1$" /usr/share/dict/words
+
+// to dismiss output of your command, redirect to /dev/null
+
+Checking for success of last command run: echo $?
+// 0 is usually for success, everything else for failures
+
+If statements:
+Ex: 
+if [ $? -eq 0 ]; then
+		echo “Bad Password”
+	else
+		echo “Maybe a good password”
+fi // always close the if statement
+
+While loops:
+eg: print numbers from 1 to $1
+	#!/bin/bash
+	x=1
+	while [ $x -le $1 ]; do
+	echo $x
+	x=$((x+1)) // x=$x+1 wont work, because $x is a string and you will get "1+1"
+	done // remember to close loops
+
+For loops:
+
+eg: you want to remame all .cpp files in pwd to .cc
+	#!/bin/bash
+	for name in *.cpp; do // *.cpp is a glob that finds all matching files
+	mv ${name} ${name%cpp}cc // "${name%cpp}" is the value of name without the trailing cpp
+	done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

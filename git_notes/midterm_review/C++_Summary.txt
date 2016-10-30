@@ -1,0 +1,314 @@
+Notice: All the basic shit like loops and other bs, you should know this by now 100%
+So I'm not going to do that, I'm going to focus on some of the later shit and C++
+specific behaviour
+
+----------------C++ I/O streams-----------------
+
+C++ gives you 3 i/o streams
+	- cin for reading from stdin
+	- cout, cerr for printing to stdout and stderr
+
+I/O operators: 
+	<< means "put to" for output
+	>> means "get from" for input
+// Arrows show where the information is flowing and its direction
+Also:
+>> this is C's right bitshift operator. a >> b shifts a's bits to the right y b spots
+Ex: 
+	21 >> 3 
+	we know that 21 = 10101 
+	So 21 >> 3 = 01 >> 11 = 10
+this means the same in C++, cin moves a bits to b, hence "get from"
+
+CIN operator ignores whitespace 
+ - if input doesn't contain numbers, cin fails and var is undefined
+ - if input is exhausted before we give 2 ints, we press ^d (EOF) then the statement fails and var is again undefined
+ - if read fails, there is an expression cin.fail() which will always be true when read fails
+ - if you get EOF, then cin.eof() and cin.fail() will both be true // However, these won't turn on, until you try to read file and fail
+
+Ex: read all ints from stdin, echo them one per line to stdout, stop on any failure
+int main() { 
+  int i;
+  while (cin >> i) { 
+    cout << i << endl;
+  }
+}
+
+Ex: read ints and echo to stdout until eof, skip all non-int input
+int main() {
+  int i;
+  while (true) {
+	if (!(cin >> i)) {
+	  if (cin.eof()) break;
+	  cin.clear(); // clears the fail bit. But the wrong character is still in the stdin.
+	  cin.ignore(); // means to skip the next character
+	}
+	else cout << i << endl;
+  }
+}
+
+OR 
+
+int main() {
+  string s;
+  int n;
+
+  while (cin >> s) { // the only way reading a string can fail, is if you have EOF
+	istringstram ss {s}; // you put the input into a string stream
+	if (ss >> n) cout << n << endl; // then you try to get out an int from the stream
+  }	
+}
+
+---------------------------References------------------------------------
+int y = 10;
+int &z = y; // im saying, z is an lvalue reference to y
+			// like a const pointer, similar to a declaration like:
+			// int *const z = &y (not exactly the same tho)
+
+References are like constant pointers with automatic dereferencing
+	
+z[]---->y[10] // z is pointing to the memory location of y and can't be changed
+z = 10; (not *z=10;) // and we get that y == 10
+
+int *p = &z; // trying to take the address of z, but when you do it, it gives you the address of y
+// so in all cases z behaves exactly like y, they really should be indistinguishable
+
+Rules for referencing: "Things you cant do with lvalue references" 
+	1. Can not leave them uninitialized //eg: int &x;
+	2. Must initialize to something that has an address // "something that has an address" is called lvalue - the thing on the left of the assignement value
+		// eg: int &x = 3; bad
+		// eg: int &x = y + z; bad 
+		// eg: &x = y; good
+	3. Cannot create a pointer to a reference: int &*x; bad // always start with the variable and work your way up
+		But, perfectly legal to create reference to a pointer: int *&x= ____; good
+	4. Cannot create a reference to a reference:
+		int &&x=___; // this means something different (covered later)
+	5. Cannot create arrays of references: 
+		int &r[3]= {n,n,n}; bad
+
+	Rules: "Things you can do"
+	1. Pass references as function parameters. 
+		void inc (int &n) {++n;} // &n is a constant pointer to the argument. 
+								 // Notice: no pointer dereference, and printing passed value later will give you incremented value
+
+---------------Overloading << and >> (I/O operators)-------------------
+
+	eg:
+	struct Grade {
+		int theGrade;
+	};
+
+
+	ostream &operator<< (ostream &out, const Grade &g) { // you have to use references because ostream can not be copied
+		out << g.theGrade << '%' // to print a percent sign every time after the grade
+		return out; // or "return out << g.theGrade << '%'"
+		// key is that we have to return ostream, just like cout does
+		// this way we can use cascading effect: cout << x << y << z << endl;
+	};
+
+	istream &operator>> (istream &in, Grade &g) { // no const for Grade because you want to change it
+		in >> g.theGrade;
+		if (g.theGrade < 0) {
+			g.thegrade = 0;		
+		} 
+		if (g.theGrade > 100) { 
+			g.theGrade = 100;
+		}
+		return in; // have to return istream because of the cascading effect
+	}
+	
+	int main () {
+		Grade g;
+		while (cin >> g) cout << g << endl;
+	}
+
+---------------------------------OOP Classes-----------------------------
+Differences:
+ - Classes's default visibility is private, whereas structures are public
+ - But in C, structures also can't have methods in them, because they are considered PODs
+
+Definitions: 
+	- Class -> a struct type that can contain functions
+			-> c++ does have a class keyword. We will cover it later
+
+	- Object -> an instance of a class
+			 -> So Student s{60,70,80}. Student is the class and s is the object
+			 -> then function grade(), is called a member function or a method. First method that we have written in this course, before this, everything was functions.
+
+This is why methods and functions are different
+	Formally: methods takes a hidden extra parameter called "this"
+	 - this is a pointer to the object on which the method was invoked
+
+Every class comes with a bunch of default functions, we call those BIG 5:
+	- destuctor -> deletes the object
+	- copy constructor -> constructs an object using values to another predefined object
+	- move constructor -> constructs an object using values of an rvalue, steals it from it
+	- copy assignment operator -> copies values into already existing object from a different predefined object
+	- move assignment operator -> copies values into already existing object from an rvalue object
+
+-------------------------------Destructor------------------------------------
+When an object is destroyed:
+	- if stack allocated -> goes out of scope
+	- if heap allocated -> it is deleted a mathod called the destructor runs
+
+Sequence of events that happens when an object is destroyed:
+	1) destructor body runs
+	2) field's destructors invoked in reverse declaration order
+	3) space is deallocated
+
+Example for Node:
+Struct Node {
+	......
+	~Node(){
+		delete next;
+	} // the way that this works is we delete next and call next's destructor, which deletes the next and then the next etc...
+}
+
+Node *np = new Node{1, new Node{2, nullptr}}
+delete np;
+
+-------------------------------Copy Constuctor---------------------------------
+
+The copy constructor is called:
+	1) when an object initializes another object
+	2) when an object is passed by value
+	3) when an object is returned by value (*not always - will discuss later)
+Note:
+	- can't override copy contructor
+	- should always give it values by reference
+
+Example for Node:
+struct Node {
+	int data;
+	Node *next;
+	Node (const Node &other): data{other.data}, next{other.next?new Node {*other.next}:nullptr} { 
+	// the trick is that when you call "new Node{*other.next}" recurses, so other values are copied too
+	}
+}
+
+Node *n = new Node{1, new Node{2, new Node{3, nullptr}}};
+
+-------------------------------Copy Assignment Operator-------------------------
+
+Student billy{60, 70, 80};
+Student mary; // default constructor
+mary = billy; // copy assigment operator
+
+NOTE: one of the biggest issues of Copy assignment operator is self-assignment
+
+#include <utility>
+
+struct Node {
+	...
+	...
+	...
+	void swap (Node &other) {
+		using std::swap;
+		swap (data, other.data); // we swap the current data in this with data from other
+		swap (next, other.next); // we swap the current next in this with next from other
+	} // we swap because we want to delete the old values in this and get new values from other
+
+	Node &operator= (const Node &other) {
+		Node tmp = other; // tmp = copy of other
+		swap (tmp); // me = copy of other, tmp = my old fields 
+		// now since tmp is stack allocated, it is destroyed when this is returned
+		return *this;
+	}
+}
+
+------------------------------Move Constructor----------------------------------
+Its heavily related to rvalues
+ - lvalues are expressions that refer to a memory location and allow us to take the address
+   to that location using &
+ - rvalues, are things that are not lvalues, or temporary variables that compiler created for us
+   and going to delete as soon as we dont need them
+
+Ex:
+int k = 15 // k is an lvalue, 15 is an rvalue, because its temporary
+
+Now, what if we do this:
+
+Node plusOne (Node n) {
+	for (Node *p = &n; p; p = p->next) {
+		++p->data;
+	}
+	return n;
+} // What we get from here is a copy of the original list with every value increased by one
+
+Node n {1, new Node{2, nullptr}};
+Node m3 = plusOne(n); // here we run the copy constructor, where plusOne(n) is a temp
+
+struct Node {
+	Node (Node &&other): data{other.data}, next{other.next} {
+		// Now the list is going to be destroyed because other is a temporary. 
+		// We actually have to take values away from other
+		other.next = nullptr;
+	}
+}
+
+So now C++ will automatically delete whatever was in the temporary location, but not the whole list
+because we made the temp point to a nullptr and saved the pointers to temporary location in this
+
+------------------------------Move Assignment Operator----------------------------------
+Node n {1, new Node{2, nullptr}};
+Node m;
+m = plusOne(n); // assignment from tempoprary location
+
+struct Node {
+	Node &operator= (Node &&other){
+		swap(other); // the other is going to be destroyed anyways, so you simply swap with it
+		return *this;		
+	}
+}
+
+So if you don't define move constructor/assignment operator, the copy versions will be used. If
+the move constructor/assignment is defined, it will replace all calls to the copy 
+constructor/assignment when the argument is a temporary (rvalue)
+
+-------------------------------------Constant objects-----------------------------------
+in const objects:
+	1) you can't change the fields
+	2) Can we call methods on const objects? 
+		-> most of the methods can change the fields of the object, which violated const's rules
+		-> But whats the point of having const objects if you cant pass them to methods?
+		-> you can call methods on const objects, but they have to promise not to change any fields
+
+mutable - makes fields changeable even from a method that promises to be constant
+static - create a global variable that is attached to a class, not an object
+// note: make sure that you intialize a static variable in .cc file like this, Vec::numVecs = 0;
+
+
+-----------------------------------------Iterators--------------------------------------
+Iterator is a class that lives inside another class.
+ - iterators manage access to data in the list
+ - iterators must have these 4 methods defined in public:
+	- int &operator* () {return p->data;}
+	- int &operator++ () {p = p.next; return *this;}
+	- int &operator==
+
+for (auto it = l.begin(); it != l.end(); it++) {
+	cout << it << endl;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,18 +1,21 @@
 ﻿-------------------Pattern matching in text files-------------------
 
-	egrep (extended global regular expression print)
+egrep (extended global regular expression print)
 
-	Usecase: egrep pattern file - prints every line in the file that is matching 		   the pattern
+Usecase: egrep pattern file - prints every line in the file that is matching the pattern
 
 eg: print every line in the file index.html that contains cs246 
 --> egrep cs246 index.html // pattern = cs246
 
-how many lines in index.html contaij cs 246?
---> egrep "cs246|cs 246" index.html | wc -l // find the pattern, then pipe output of egrep to wc (-l gives the number of lines) to get number of occurences
+how many lines in index.html contain cs 246?
+--> egrep "cs246|cs 246" index.html | wc -l 
+// find the pattern, then pipe output of egrep to wc 
+// (-l gives the number of lines) to get number of occurences
 
 OR 
 
---> egrep '(cs|CS) 246' index.html | wc -l // allows to search for both “cs246” and “cs246”
+--> egrep '(cs|CS) 246' index.html | wc -l 
+// allows to search for both “cs246” and “cs246”
 
 available patterns called regular expressions, different from globbing patterns
 
@@ -22,7 +25,7 @@ available patterns called regular expressions, different from globbing patterns
 Now try adding an optional space: 
 "[cC][sS] ?246" 
 	? = 0 or 1 or preceding expressions // so we are looking for:
-		“cs(0 or 1 space 	characters)246”
+		“cs(0 or 1 space characters)246”
 	
 Now what if you want to leave multiple spaces?
 	* = 0 or more of preceding  spaces. notice that its different from globbing
@@ -33,7 +36,8 @@ Similar example:
 Possible results -> 246, cs246, cscs246, 
 
 Next regular expression is a . (dot) matches any single character
-	.* then means anything at all // we are saying 0 or more occurances of any 		character, which imples, find everything 
+	.* then means anything at all 
+// we are saying 0 or more occurances of any character, which imples, find everything 
 
 "cs.*246"
 Possible results -> lines containing cs(anything in between)246
@@ -42,8 +46,8 @@ Always remember that egrep gives you lines that contain the pattern, not number 
 
 More regular expressions
 
-^,$ - beginning and end of a line. //begin matching exactly with the characters 	after ^(chars)
-	// match line that ends with character before (chars)$
+^,$ - beginning and end of a line. //begin matching exactly with the characters after ^(chars)
+// match line that ends with character before (chars)$
 
 "^cs246" // lines that start with cs246
 
@@ -156,8 +160,6 @@ Notes:
 * Good practice: ${x} might change things occasionaly when you dont know where the variable name ends. For example ${file}.in is different from $file.in
 * Finally, all shell varibales are Strings
 
-
-
 eg: 
 dir=~/cs246
 echo ${dir}
@@ -169,7 +171,7 @@ There are also come global variables that are always available to you:
 eg:
 ${PATH} // a list of dirs separated by colons. 
 
-Reason why shell could't find your script earlier (when you run without “./”)is because it has a set list of dirs to look for programs that you are trying to run.
+Reason why shell could't find your script earlier (when you run without “./”)is because it has a set list of directories to look for programs that you are trying to run.
 When you type a command, shell searches these directories in order to find a program with that name
 
 There is a difference here too:
@@ -727,7 +729,7 @@ A: C++ has another pointer like type, they are called references
 	int h (const ReallyBig &rb) {...}; // this way its still fast (no copying) and the parameter cannot change. 
 	"Only downside left is if you actually wanted to change rb inside the function, but not outside"
 	So here is the advice: 
-	Prefer to pass-by-const-ref over pass-by-value for anything lanrger than a pointer. Unless the function needs to make a copy anyway - then maybe pass by value. 
+	Prefer to pass-by-const-ref over pass-by-value for anything larger than a pointer. Unless the function needs to make a copy anyway - then maybe pass by value. 
 	
 	**** 1 More example ****
 
@@ -1035,14 +1037,14 @@ A: C++ has another pointer like type, they are called references
 
 	Solution: 
 	Vec.h:
-	#ifdef VEC_H
+	#ifndef VEC_H
 	#define VEC_H
 	.
 	. // file content
 	.
 	#endif
 
-	First time vec.h is included symbol VEC_H is not defined, so file is included. After that VEC_H is defined, so content are suppressed
+	First time vec.h is included symbol VEC_H is not defined, so file is included. After that VEC_H is defined, the contents are suppressed
 
 	Rules: 
 	- ALWAYS put include guards in .h files 
@@ -1068,7 +1070,7 @@ A: C++ has another pointer like type, they are called references
 	cout << s.grade() << endl // and use functions inside classes to return values
 
 	Definitions: 
-	- Class -> a struct type that cat contain functions
+	- Class -> a struct type that can contain functions
 			-> c++ does have a class keyword. We will cover it later
 
 	- Object -> an instance of a class
@@ -1123,7 +1125,7 @@ A: C++ has another pointer like type, they are called references
 	OR // a different syntax, but does the same thing
 	Student billy = Student{60,70,80};
 
-	before we were creating billiy object on the stack. Now to create it on the HEAP:
+	before we were creating billy object on the stack. Now to create it on the HEAP:
 	Student *pBilly = new Student{60,70,80};
 
 	Advantages of constructors:
@@ -1306,7 +1308,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 
 		Struct Node {
 			int data; 
-			Node next;
+			Node *next;
 			Node (int data, Node *next): data{data}, next{next} {.....}
 			.....
 		}
@@ -1335,7 +1337,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 		eg:
 		Struct Node {
 			int data; 
-			Node next;
+			Node *next;
 			Node (int data, Node *next): data{data}, next{next} {.....}
 			Node (const Node &other): data{other.data}, next{other.next?new Node {*other.next}:nullptr} { 
 			// the trick is that when you call "new Node{*other.next}" recurses, so other values are copied too 
@@ -1357,8 +1359,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 
 	When an object is destroyed:
 		- if stack allocated -> goes out of scope
-		- if heap allocated -> it is deleted
-	a mathod called the destructor runs
+		- if heap allocated -> it is deleted a mathod called the destructor runs
 
 	Every class has a default destructor // it calls destructors on all the object fields, just like the constructor, but the opposite
 
@@ -1386,7 +1387,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 	Now: 
 	delete np; // deletes the whole list
 
--------------------------Copy Assignment--------------------------
+--------------------------------Copy Assignment--------------------------
 	the hardest and trickiest one (will be on the midterm, because everyone fucks it up)
 
 	Student billy{60, 70, 80};
@@ -1431,7 +1432,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 
 			data = other.data;
 			delete next; 
-			next = other.next?new Node{*other.next}: nullptr;
+			next = other.next?new Node{*other.next}:nullptr;
 			return *this;
 		} 
 	}
@@ -1443,15 +1444,15 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 			if (this == &other) return *this; // now if we encounter self-assignment, we will simply return pointer to this
 			// now we happpen to know that new doesn't 100% work, that it might fail. And if new fails, this function will bail out because we wont be able to set a value for next
 			// and next will keep pointing to old memory, which corrupts the list
-			Node *tmp=next;
-			next = other.next?new Node{*other.next}: nullptr; 
+			Node *tmp = next;
+			next = other.next?new Node{*other.next}:nullptr; 
 			data = other.data;
 			delete tmp;
 			return *this;
 		}
 	}	
 	This is better because if new fails, next and data has not been cahnged yet, so the node is still in valid state
-	Also, the actual check for self assignemnt is not necessary here, because we are making a copy of other no matter what, since im wokrking of a copy, 
+	Also, the actual check for self assignemnt is not necessary here, because we are making a copy of other no matter what, since im working of a copy, 
 	it doesn't matter if we are copying form somewhere else or from myself.
 
 	Now there is another version of operator Equal that does everything that the previous version, but is much simpler to write
@@ -1501,7 +1502,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 	But when we run this, we get 2 calls to the Basic Contructor and 4 calls to the Copy constructor
 	- 2 calls to the Basic constructor because of the two nodes that we have
 	- the question is why the copy contructor gets called twice (2 on way in, 2 on way out)
-		- because there are 2 nodes in the list, it calls itself recursively, so for every node it runs twice
+	- because there are 2 nodes in the list, it calls itself recursively, so for every node it runs twice
 
 	Now, if plusOne(n) is the other, what is it referencing? 
 	- here we are pointing to the temporary object that our compiler created for us, because we actually did not initialize anything
@@ -1517,14 +1518,14 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 	Your friend tells you that you can find the notes in the library, and you like, nah bro if you throw them away, just give it to me.
 
 	The key for this to work is you have to be able to tell, whether other is a reference to a temp or a standalone object
-	- up untill c++11 this was impossible, but not anymore
+	- up until c++11 this was impossible, but not anymore
 	
-	Now we rvalue reference Node&& is reference to a temporary object (rvalue) or type Node
-	- idea is to copy from lvalue and steal from rvalue
-	- for that we have to write a ouw own contructor
+	Now we rvalue reference Node&& is reference to a temporary object (rvalue) of type Node
+	- idea is to copy to lvalue and steal from rvalue
+	- for that we have to write a our own contructor
 
 	struct Node {
-		Node (Node && other): 
+		Node (Node &&other): 
 			data{other.data}
 			next{other.next} // now since the list is going to be destroyed because other is a temporary. We actually have to take values away from other
 		{ // this is called a move constructor
@@ -1540,7 +1541,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 	since move is not recursive, it will excecute in constant time always
 	** this is one of the trickier concepts in the course, make sure you understand it **
 
-	Since a need for move can arise when using copy operator, it could also arise whe using copy assignemmt
+	Since a need for move can arise when using copy operator, it could also arise when using copy assignemmt
 	Node m;
 	m = plusOne(n); // assignment from temp
 
@@ -1548,7 +1549,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 	struct Node {
 		Node &operator= (Node && other) { // we want to steal other's data, but its assignent operator now, which means that i already have some of my own nodes
 			// so you have to destroy my old data. The other is already going to be destoryed, so you simply swap your data with his data
-			swap (other);
+			swap(other);
 			return *this;			
 		}
 	}
@@ -1560,20 +1561,20 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 
 ---------------------------Copy/Move Elision-----------------------
 
-	Now he will show us something that will blow our minds.. Great, just what i wanted!
+	Now he will show us something that will blow our minds.. Great, just what I wanted!
 
 	Consider this function:
 	Vec makeAVec() {
 		return {0, 0}; // invokes a basic constructor
 	} 
 	Vec v = makeAVec(); // What runs? copy constructor? move constructor?
-	// well, he is not sure, so he is going to ask the compiler.. i didnt know they were that close.
+	// well, he is not sure, so he is going to ask the compiler.. I didnt know they were that close.
 	Only the basic constructor runs, which is pretty messed up
 	
-	Its a specific behaviour of C++
+	It's a specific behaviour of C++
 
 	In some circumstances, the compiler is allowed to skip calling copy or move constructors (but doesn't have to) // wtf is this?
-	In this example: makeAVec writes its result ({0, 0}) 
+	In this example: makeAVec writes its result({0, 0}) 
 	- idea is that it writes its result directly into the space occupied by V in the caller, rather than copy or move it later
 	- though you dont need to know when this stuff happens
 
@@ -1583,7 +1584,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 	doSomething(makeAVec()); // the result of makeAVec() is written directly into the parameter.
 	// this is allowed even if dropping contructor calls is going to change behaviour of the program (eg. if your constructor prints something)
 
-	Compilers obey something like an ASIF rule // you can do anything you want, as long as its doing something that looks like what you asked.
+	Compilers obey something like an ASIF rule // you can do anything you want, as long as its doing something that looks like what you asked.sse
 	Lesson: make sure compiler is not confused by your code // you are not expected to know excetly when move/copy elision is allowed, jsut that its possible. 
 
 	If you need all of the contructors to run: g++ can help you
@@ -1649,7 +1650,7 @@ Struct Vec {
 }
 
 Vec *vp = new Vec[5];
-Vec moreVecs[3]; // these want to call the default constructor on each item, but they can't because there are no default constructors
+Vec moreVecs[3]; // these want to call the default constructor on each item, but they can't because there are no default values in Vec cosntructor
 
 Can't initialize arrays of elements.
 
@@ -1742,7 +1743,7 @@ struct Student () {
 But it is not as simple as that:
 	basically what we have done is we created a global variable, but within the scope of the class, so it can't be accessed from outside
 
-So if im creating a global variable, does this line "static int numInstances;" declare a global variable or define it?
+So if I'm creating a global variable, does this line "static int numInstances;" declare a global variable or define it?
 	If it does define it, then we are creating a new variable on every new instance. 
 	if it is defined, then we will have way too many copies of the same variable
 	if we declare it, then its a question who actually defines it in the first place
@@ -1791,12 +1792,12 @@ What happens when these go out of scope?
 	- n2, n3 go out of scope: n3's destructor attempts to delete the n2, but the n2 is on the stack, not the heap
 	  and we get undefined behaviour, maybe a crash.
 
-So Class Node relies on an assumption for its proper operation, and the assumption was that next was either a null pointer or allocated by new
+So Class Node relies on an assumption for its proper operation, and the assumption was that next was either a nullptr or allocated by new
  - this is what an invariant is called.
 	- this is a logical statement that holds true, upon which Node relies.
 
 But the problem is that while we are relying on it, we can't guarantee that it will be true all the time. You can't trust the user to use it properly
-In fact, you cant't enforce any invariants // user can interfere with our data
+In fact, you cant't enforce any invariants // user can't interfere with our data
 
 Ex:
 you are writing stack:
@@ -1822,7 +1823,7 @@ struct Vec {
 		.
 } 
 
-In general: want fields to be private and only the methods shuold be public
+In general: want fields to be private and only the methods should be public
  - But this is very error prone, so we would instead want to have default visibility as private
 	- if the default visibility was private, then all the C will break, because it doesn't have private mode
 
@@ -1856,7 +1857,7 @@ Class List { // we want to take advantage of the scoping mechanism of classes
 		~List () {delete theList};
 }
 So now we have a nested private class
-- only accessinble within list
+- only accessible within list
 - so the outsiders of this class, can't even use the word Node. All they can do is use the functions that we give them
 
 // list.cc
@@ -1874,10 +1875,10 @@ void List::addToFront(int n) {
 	theList = new Node {n, theList};
 }
 
-int ith(int i) const {
+int List::ith(int i) const {
 	Node *cur = theList;
 	for (int n = 0; n < i && cur; ++n, cur = cur->next);
-	return cur->data;  
+	return cur->data;
 }
 
 Only list can create/manipulate Node objects
