@@ -2381,10 +2381,231 @@ class Y final:public X {
 }
 
 
+---------------------------Pure Virtual Methods + Abstract Classes-------------------------------
 
+class Student {
+protected:
+	int numCourses;
+public:
+	virtual int fees();
+}
 
+2 kinds of Student: Regular + Cooop
 
+class Regular:public Student {
+pblic:
+	int fees() override;
 
+} // regual student's fees
+
+class Coop:public Student{
+public:
+	int fees() override;
+
+} // coop student's fees
+
+what should we put for Student::fees?
+
+Not sure, every student should be regualr or co-op
+
+Can explicitly give Student::fees No implementation
+
+class Student {
+....
+public:
+	virtual int fees() = 0; // methos has no implementaion ****
+	// called a pure virtual method
+}
+
+A class with a pure virtual methods cannot be instantiated:
+Student s; // will not work
+
+this is called an abstract class and its purpose is to organize subclasses
+
+Subclasses of an abstract class are also abstract, unless they implement the pure virtual methods.
+
+If a class is anot acstract, then its concrete
+
+UML: Virtual + pure virtual methods::italics
+
+static _____ underline
+
+At this point of time, we usually play how imheritance plays off the BIG 5, but instead he is going to focus on the assignment
+
+-------------------------------------Templates-------------------------------------------
+
+This is very big in C++, but we are going to spend very little time on this
+
+Earlier on, we had something like this:
+
+class List {
+	struct Node;
+	Node *theList;
+	.....
+};
+
+struct List::Node {
+	int data;
+	Node *next;
+}
+we went to a lot of trouble to implement this, and all was good because we got it to work.
+Q: But what if we now want a string linked list?
+Q: do we have to write a whole new class, now?
+A: Yes, we do, but C++ can help us, if we create a template class parametized by a type
+
+template <typename T> class Stack {
+	int size;
+	int cap;
+	T *contents;
+	public:
+		Stack() {.......}
+		void Push(T *) {.......}
+		T Top() {.....}
+		void Pop() {......}
+} // now istead of using an int everywhere, we use a pointer to contents
+
+template <typename T> class List {
+	struct Node {
+		T data;
+		Node *next;
+	}
+	Node *theList;
+	public:
+		class Iterator {
+			Node *p;
+			explicit Iterator(Node *p): p{p} {}
+			public:
+				T &operator*() {return p->data;}
+				....
+				....
+				....
+		}
+	T ith(int i) {....}
+	void addToFront(T n) {....}
+} // the idea is instead of specifying what type of data is returned in every method, we will simply say T
+
+The benefit is that now our client can say:
+List<int> l1;
+if we want a list of lists of int:
+List<List<int>> l2;
+
+l1.addToFront(3);
+l2.addToFront(l1);
+
+This list template still has a begin/end method and and interator class, so we can still iterate it, the way we did before:
+
+for (List<int>::Iterator it = l1.begin(); it != l1.end(); ++it) {
+	cout << *it << endl;
+}
+
+or indeed, what we did before, still applies:
+
+for (auto n:l1) {
+	cout << n << endl;
+}
+
+Every time we create a new class using templates, we are actually creating brand new classses, it's just that we don't see it anymore
+
+"this is some things about c++, it starts relatively easy, with strings and other bs and then you get into writing your own assignment operator." 
+"Suddenly, c++ will get really difficult, but there comes a point where difficulty level slows down. Right now we are going to hit a crest, where its not as difficult"
+
+-------------------------------------------The standard Template Library (STL)--------------------------------------
+much of the stuff that comes with C++ is written out as templates, so you can resue it for your own purposes
+
+Large # of useful templates:
+Eg: dynamic-length arrays : VECTORS
+	In the next assignemnt (4), it says you are not allowed to use array's functions delete and new, because they want us to use this:
+	vectors will manage all the heap allocated arrays for you
+
+#include <vector> // we have to be a little bit careful here
+using namespace std;
+
+// recall the curly brackets vs. round brackets argument
+// in generall curly is for c++ and round for c, so you shoul dbe using curly 99% of the time
+// except for this time, tho. ik, its ucked up
+
+vector<int> v {4, 5}; // gives you a vec(4, 5)
+vector<int> v (4, 5); // gives you a vec(5, 5, 5, 5)
+
+// The {} expression is called the initializer list
+// if you write a function that takes in {}, you can intiialize arrays using that
+
+v.emplace_back(6);
+v.emplace_back(7); // now we have (4, 5, 6, 7)
+// we can do this forever and the array will keep growing forever and this array is also STACK allocated
+// DAMN SON, someone give Lushman a cookie
+
+Looping:
+Eg:
+for (int i = 0; i < v.zise; ++i) {
+	cout << v[i] << endl;
+} // just like an array, the vector standard guarantees that its going to behave as an array
+
+for (vector<int>::iterator it = v.begin(); it != v.end(); ++it) {
+	cout << *it << endl;
+} // also can use auto here
+
+OR:
+
+for (auto n:v) {
+	cout << n << endl;
+}
+
+Wow, he brouoght up the midterm...
+
+To iterate in reverse:
+for (vector<int>::reverse_iterator it = v.rbegin(); it != v.rend(); ++it) {
+	cout << *it << endl;
+}
+
+v.pop.back() // remove last element
+
+Use iterators to remove from inside a vector:
+	auto it = erase(v.begin()); // erases element 0
+	it = v.erase(v.begin() + 3) // erases item 3
+// vectors' interators support pointer arithmetics
+// not all interators are created equal, so not all of them can do it 
+// One of the rules that comes to vectors, when you use anything that shuffles items around (deleting elements),
+// you shold not be using iterators with deletion of elements
+
+instaed, use this:
+it = v.erase(it); // erases item pointed at by it
+it = v.erase(e.end() - 1); // returns an iterator to the item past the item jsut removed.
+
+Now that we are allowed to use vectors, we should emprace them... We have just eliminated an entire class of memory management
+
+v[i] - returns the ith element of v // this method call is completely unchecked, just like with arrays
+// if you go out of bounds, you are in for some fun behaviour
+// might prefer using iterators, because those never go out of bounds
+
+on the other hand, there is another version of iterator that is checked:
+v.at(i);
+
+Q: what happens when you break the rules and try going out of bounds with .at()?
+
+Problem: 
+	- Vector's code can detect errors, but it doesn't know what to do about it
+	- Only the client can respond on how we should behave here, but they can't detect the error
+
+C solution:
+	- if a function fails, it returns status code
+	- set the global variable "errno" to an error code, but then you are supposed to check it all the time, but ain't nobody got time for that
+	// now we have this entire mess that discourages programmers to do error checks, because they are inconvenient
+
+C++ solution:
+	- when an error condition arises, the function raises an exception. By default, execution stops
+	- but you can also write HANDLERS to CATCH exceptions "because apparently they are like baseballs"
+
+vector<T>::at() raises an exeption std::out_of_range, when it fails
+// we can handle it as follows
+
+#include <stdexcept>
+.....
+try { // inside the curly brackets go the statemnts that might faild due to specified error
+	cout << v.at(1000000000000) << endl;
+} catch (out_of_range r) {
+	cerr << "Range error: " << r.what() << endl;
+} // you are allowed to ask what? Which will give you some extra info on the error
 
 
 
