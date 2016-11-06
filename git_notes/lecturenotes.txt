@@ -2608,13 +2608,228 @@ try { // inside the curly brackets go the statemnts that might faild due to spec
 } // you are allowed to ask what? Which will give you some extra info on the error
 
 
+----------------------------Exceptions------------------------
+Now consider:
+void f () {
+	throw out_of_range{"f"} // "f" is what()
+}
+void g() {f();}
+void h() {g();}
 
 
+What happens:
+	- main calls h
+	- h calls g	
+	- g calls f
+	- f throws out_of_range
+
+// enter more here
 
 
+A handler can do part of the recovery job // execute some corrective code
+ + raise another exception
+
+try {...}
+catch (Some_type s) {
+	...
+	throw Some_other_error {"..."}; // can be the same one
+}
 
 
+Throw VS. Throws:
+	Since exceptions are classes, we can also have subclasses
+	class SomeType {
+		class SpecialSomeType {
+		...
+		}
+	}
 
+"This is similar to pass by reference vs. pass by value"
+Throw: actual type of s is retained 
+// ^pass by reference
 
+Throws creates a new exception of type SomeType, even if s itself was already specialtype
+// ^pass by value
+
+Occasionally, you want to say, idc what type of error it is, i simply want to catch it
+- No, you cant do that 
+// there is a top level exception type, and all the otehr types inherit from it 
+- but you might still want to do it, but how? 
+
+"A handler can act as a catch-all":
+try {....} // these dots stand for the code
+catch (...) { // you must put the three dots in to catch all exceptions, like "..."
+
+}
+
+Apparently exceptions that you throw, don't actually have to be objects, so you 
+can't call .what() on all of them, because they simply dont have that method
+
+check as SICK example of recursion, factorials and throwing errors in 
+lectures/c++/exceptions/exfact.cc
+	OR
+lectures/c++/exceptions/exfib.cc
+
+new helper thing in Ubuntu:
+	time ./myprog // to see how long the program takes
+	- you look for "user" for acutal time of your code
+	- "real" means how long you took to run your ptogram
+
+Ok so he did the following:
+	- he timed his recursive fibonacci sequence and timed his exfib.cc function
+	- the recursive ran in 0.018s and the one with exceptions took 11.716s
+
+Moral: "dont overuse exceptions! they might be useful, when you actually need them tho"
+
+Now we will learn how to define our own exception class: 
+Eg:
+class BadInput {};
+
+try {
+	int n;
+	if (!(cin >> in)) therowBadInput{};
+} catch (BadInput &s) {
+	cerr << "input not well-formed" << endl; 
+	// HE caught the exception by reference this time and in general thats what you
+	// should always do
+}
+
+Q: why catch by reference? 
+A: 
+- supresses copying
+- exception that you caught might be a subtyoe and you dont want it to be sliced
+- its the proper way to work with objects
+
+Some standard exceptions:
+- length_error // attempting to resize strings/vectors that are too long
+- bad_alloc // is what happens when "new" fails
+// remmeber how he told us that sometimes new fails? 
+// if it fails, it throws an exception, which if not handled, will crash the whole program
+
+Much more on exception later! // good enough for A4
+
+We are going back to Design Patterns
+
+------------------------------Guiding Principle---------------------------------
+Guiding principle: program to the interface, not the implementation:
+- You start with an abstract base class, to define the interface
+- You work with pointers to  abstract base classes and call their methods
+- Concrete classes can be swapped in/out
+- It gives you abstraction over variety of behaviours
+
+Lets get back to the interator pattern:
+Eg:
+class List {
+	Struct Node;
+	...
+	public:
+		class Iterator {
+			....
+			....
+			....
+		};
+	...
+}; // what if you want to iterate over other object
+// you can try writing a class called abstract Iterator
+// where you will put all the things that you want
+
+class AbstractIterator {
+	public:
+		virtual int &operator*() = 0;
+		virtual AbstractIterator $operator++() = 0;
+		virtual bool operator!= (const AbstractIterator &other) =0;
+		virtual ~AbstractIterator();
+};
+
+// now what he can do is this? 
+// what if he has another data structure? 
+
+class set {
+	....
+	public:
+		class Iterator:public AbstractIterator {
+			....
+			....
+		};
+	....
+};
+
+// if you still saying "So what?" here is what he does next
+
+What if you want to write a function that will print all the items out of the list?
+	- but instead of giving it out list, we give it an interator
+
+Then you can write code that operates over Iterators
+Eg:
+void foreach(AbstractIterator start, AbstractIterator end, void(*f)(int)) {
+	while (start != end) {
+		f(*start);
+		++start;
+	}
+}; // works over lists and sets
+
+This is the main thrust behind the design patterns, where you can have abstract classes
+so that you can have concrete behaviour for every operation and never make mistakes
+
+Another Design Pattern coming up now!!!
+
+---------------------------Observer Pattern------------------------------------
+Very useful, might get a lot of milage on A4 and A5
+
+Idea of Publish-subscribe model:
+- you have one class: publisher/subject, which generates data
+- one or more subscriber or observer classes, which receive data and react to it
+
+Eg:
+- your publisher is an excel spreadsheet
+- your observers are graphs
+	- idea is that when the sells change, the graphs update
+
+Can have all kinds of observer objects:
+	- observer attached to a cell of a spreadsheet, which notifies you when values go < 0
+	
+since there are so many possibilities you can't code it wrong
+- you should make it so that it works all the time and wont care who the observer is
+- subject should not need to know all the details
+
+Observer pattern:
+- we start with abstract classes:
+- idea is that subject has observers
+- it has them, but doesn't own them
+- UML diagram will be uploaded in the folder git_notes/
+
+sequence of method calls:
+1) Subject's state is updated
+2) Subject's Notify observer must be called // calls each observer's notify
+3) Each observer calls ConcreteSubject::getState to query the state & reach accordingly
+
+Example: Horse Races
+- subject: big scoreboard in the middle of the field that tells you who is winning
+- observers: individual betters 
+			- declare victory when their horse wins
+
+Lets write this // damn son
+
+class Subject {
+	vector<Observer*> observers;
+	Subject() {};
+	bool sttach (Observer *o) {observers.emplace(o);}
+	void detach (Observer *o) {...} // take observer out of the list
+	void notifyObservers () {
+		for (auto &ob:observers) ob->notify();
+ 	}
+	virtual ~Subject() = 0;
+}
+
+Now, we have a problem // he points to the subjcet class
+"This class is not abstract, it doesn't have any vitrtual methods"
+"Here is the trcik if you want abstract class and dont have any methods that are virtual"
+"You make the destructor pure virtual"
+
+NOTE: a virtual destructor must always be implemented!!!!
+
+Subject::~Subject() {...};
+
+Why? because when destrcutor is run, the super class destructor will be called, so it better exist
 
 
