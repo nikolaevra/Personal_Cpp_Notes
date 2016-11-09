@@ -2833,3 +2833,248 @@ Subject::~Subject() {...};
 Why? because when destrcutor is run, the super class destructor will be called, so it better exist
 
 
+Now we are actually writing out the Observer Pattern
+
+class Subject {
+	vector <Observer*> observers;
+	public:
+		void attach(Observer *o);
+		void detach(Observer *o);
+		void notifyObservers() {
+			for (auto &ob:observers) ob->notify();
+		}
+		virtual ~Subject() = 0;
+}
+Subject::~Subject() {}
+
+
+public Observer {
+	public:
+		virtual void notify() = 0;
+		virtual ~Observer();
+};
+Observer::~Observer() {};
+
+
+
+class HorseRace: public Subject {
+	ifstream in; // source of data
+	string last_winner;
+	.
+	.
+	.
+	public:
+		HorseRace(const string &source): in{source} {}
+		bool runRace(); // set last winner
+		// need a bool because you want to know when there are no more winners
+		// read in winners, if it read it successfully, return true, else false
+		string getState() {return lastwinner;}		
+}
+
+class Better:public Observer { // every better has a race that they are watching
+	HorseRace *subject;
+	String name, myHorse;
+	public:
+		Better(...) { // easy one, just set your hourse's name and notify the subject that we are watching it
+			subject->attach(this); // puts this into the list of observers in Subject		
+		}
+		~Better() {subject->detach(this);}
+		void notify() {
+			String winner = subject->getState();
+			if (winner == myHorse) {
+				cout << "YAY!" << endl;
+			} else {
+				cout << "Double or nothing" << endl;		
+			}
+		}
+}
+
+// how we do the main.cc
+HorseRace hr;
+Better Larry(&hr, "Larry", "RunsLikeACow");
+....
+while (hr.runRace()) {
+	hr.notifyObservers();
+}
+
+The key to this pattern is that it doesn't have to be about horse racing, it can be about anything
+Where you are simply watching the state of a class and notify others when it changes and 
+do things accordingly to those changes
+
+---------------------------------Decorator Pattern------------------------------------
+
+Want to enhance Object at run-time-add functionality/features
+
+Eg:
+Window system:
+	- Start with a basic Window
+	- Lets say that you typed so much text into that window that you need more space
+	- Then a scroll bat suddenly appears
+	- then you move your cursor to the top of the screen
+	- and the menu bar appears too
+
+Idea is that these things change at runtime and we want to take advantage of that
+ - This is called decorator pattern
+
+// the UML Diagram
+
+Class component:
+	- defines the interface
+	- operations your objects will provide
+
+Concrete Component:
+	- implements the interface
+
+Decorators:
+	- all inherit from decorator, which inherts from component
+
+So, every decorator is a component, "AND" every decorator "HAS" a component
+
+Here is a key ho this all fits in with a window:
+ - A window with a scroll bar is a kind of window and has a pointer to the underlying plain window
+ 
+ - Similarly, a window with a scroll bar menu is a window and has a pointer to a window with a scroll
+	bar, which itself has a pointer to a plane window
+
+ - All of these inherit from an abstract Window class, so the window method can be used polymoprhically
+	on all of them // you could describe it as similar to stack logic
+
+Eg of the decorator pattern, called Pizza
+
+// insert diagram here
+
+// open diamon means aggredation, means hasA, not ownsA
+
+ - Basic Pizza is crust and sauce
+
+class Pizza {
+	public:
+		virtual float price() const = 0;
+		virtual string desc() const = 0;
+		virtual ~Pizza();
+}
+
+class CrustAndSauce:public Pizza {
+	public:
+		float price() const override {return 5.99;}
+		string desc() const override {return "Pizza";}
+};
+
+class Decorator:public Pizza {
+	protected:
+		Pizza *component;
+	public:
+		Decorator(Pizza *p): component{p} {}
+		virtual ~Decorator() {delete component;} // ? tho
+		// the question is should the component supposed to delete the component underneath itself? 
+} // for now we will say that we can't remove toppings from a pizza
+
+class StuffedCrust:public Decorator {
+	public:
+		StuffedCrust(Pizza *p): Decorator{p} {}
+		float price() const override {
+			return component->pricE() + 2.69;
+		}
+		string desc() const override {
+			return component->desc() + " with stuffed crust";
+		}
+};
+
+so in your main, you will have something like this:
+// main.cc
+
+Pizza *p1 = new CrustAndSauce;
+p1 = new Topping("Cheese", p1);
+p1 = new Topping("Jelly Beans", p1);
+p1 = new StuffedCrust(p1);
+
+cout << p1->desc() << ": " << p1->price() << endl;
+delete p1;
+
+And we are done with the decorator pattern and FML
+
+
+-----------------------------------Inheritance in the BIG 5-----------------------------------------
+Now we are going to go back and have a discussion about the BIG 5 and inheritance
+
+We have already seen the destructor that was inherited, what about the other ones tho?
+
+we got a class book..
+
+----------------------------------Inheritance and Copy/Move-----------------------------------------
+
+class Book {
+	// deifnes copy.move constructors, copy/move operator=
+}
+
+Then we inherit it in a subclass..
+	 But suppose we do not define copy and move in the subclass..
+
+class Text:public Book {
+	....
+	public:
+		// Does not define copy/move operations
+}
+
+Text t {"Algorithms", "CLRS", 500, "CS"};
+// so what happens when we do this?
+Text t2 = t; // remmeber we have not defined copy/move operations for Text
+
+Remember: copy constructor is given to you for free.. 
+ - calls Book's copy constructor
+ - then goes field by field (i.e. default behaviour) for Text part
+ - same for other operations
+
+// this is good because you kind of want this to happen.. but there are a few things that we have to know
+
+Suppose you actually want to write move/copy operations for your subclass, how would you do that?
+
+To wirte your own operations:
+
+Copy constructor:
+Text::Text(const Text &other): Book{other}, topic{other.topic} {} // copy constructor
+
+Copy Assignment operator:
+Text &Text::operator= (const Text &other) {
+	Book::operator=(other); // we want to use the one in Book
+	topic = other.topic
+	return *this;
+} // copy assignment
+
+
+Move constructor:
+Ver 1.0
+Text::Text (Text &&other): Book{other}, topic{other.topic} {} // this is wrong
+// notice &&other is an lvalue that points to the rvalue of the other
+// we are not taking advantage of the move constructor's efficiency because we are actually using a copy
+// constructor from the Book
+
+Ver 2.0
+Text::Text (Text &&other): Book{std::move(other)}, topic{other.topic} {} // this is strill wrong
+// because other.topic is also an lvalue that is pointing to the rvalue
+// so again, we are copying it instead of moving it, so we have to fix that
+
+Ver 3.0
+Text::Text (Text &&other): Book{std::move(other)}, topic{std::move(other.topic)} {} // this is correct
+
+Move Assignment operator:
+
+Ver 1.0
+Text &Text::operator= (Text &&other) {
+	Book::operator=(other); // this is a copy assignemnt
+	topic = other.topic; // this is a copy assignement
+	return *this;
+} // we actually want other to be treted as an rvalue, so we have to change something
+
+Ver 2.0 
+Text &Text::operator= (Text &&other) {
+	Book::operator=(std::move(other));
+	topic = std::move(other.topic);
+	return *this;
+} // this is a correct version
+
+Notes:
+ - even tho other points at an rvalue, other itself is an lvalue and so is the other.topic
+ - std::move(x) forces an lvalues x to be treated as an rvalue, so that the move version of the operations run
+ - everything we have done here is equivalent to the default, so if you want to do default things, then
+	you dont have to change anything, you are given these things for free
