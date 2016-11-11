@@ -3078,3 +3078,253 @@ Notes:
  - std::move(x) forces an lvalues x to be treated as an rvalue, so that the move version of the operations run
  - everything we have done here is equivalent to the default, so if you want to do default things, then
 	you dont have to change anything, you are given these things for free
+
+
+
+----------------------------------------Partial Assignment-----------------------------------------
+Text t1 {...}, t2 {...};
+Book *pb1=&t1, *pb2=&t2;
+
+What if we do this? 
+*pb1 = *pb2; // so we are assigning text2 to text1 through a book pointer
+
+so what happebed is that only the book part was copied over, and the text topic did not copy
+ - This is called partial assignment // it is not slicing tho
+	// we are not trying to fit a large object into a small hole
+
+Why was only the book part copied? 
+ - only the book assignment operator ran
+ - since we were using the book pointers
+
+How can we fix this?
+ - we want to stop using pointer to decide which assignment operator runs
+ - try making operator= virtual
+
+class Book {
+	...
+	public:
+		virtual Book &operator= (const Book &other) {....}
+};
+
+class Text {
+	...
+	public:
+		Text &operator= (const Book &other) override {...}
+		// we have to use Book here in order to override the operator, otherwise it wont be an override
+}
+
+Note:
+ - the different return types are OK (as long as return a subtype by reference)
+ - but the parameter types must be the same or its not an override. And won't compile
+ - parameters not macthing => violates is-A
+
+Making virtual operator= forces us to take any book as the second part of the operator=
+ - this means that assignment fo a Book object to a Text var would be allowed:
+Eg:
+Text t{..};
+Book b{...};
+Text *pt = &t;
+Book *pb = &b;
+*pt = *pb; // uses a book to assign a Text, which is very BAD!!!
+// but it will still compile tho.. 
+
+Also:
+Comic c{...};
+Comic *pc = &c;
+*pt = *pc; // even worse, we can assign book as a comic
+
+if operator= is non-virtual
+ - you get partial assignment through base class pointers
+ - if it is virtual, then the compiler allows to mixed assignment
+"No matter what choice you make, traouble awaits.."  -- Brad Lushman, 2016
+
+Whats the solution?
+ - is a text really a book?
+ - is comic really is a book?
+ - we said for example, all books are heavy if they are over 200 pages, and textbooks heavy over 500 pages
+ - so they are kind of different
+ - we have been treating our super class book as a specific class rather than a super class
+ - Recommendation: all super-classes should be abstract!
+
+He suggests we rewrite the hierarchy
+// insert the diagram for new book hierarchy
+
+class AbstractBook{
+	string title, author;
+	int numPages;
+	protected:
+		AbstractBook &operator= (const AbstractBook &other); // prevernts assignment through base class
+		// pointers from compiling, but still makes the implementation available to sublasses
+	public:
+		AbstractBook(...);
+		virtual ~AbstractBook() = 0;
+}
+
+class NormalBook: public AbstractBook {
+	public:
+		NormalBook(....);
+		~NormalBook(...);
+		NormalBook &operator= (const NormalBook &other) { // now we dont have to override like we did b4
+			AbstractBook::operator=(other);
+			return *this;
+		}
+};
+
+// to finish other classes, its an excercise for us
+
+So can you do partial assignment now? 
+operator= is not virtual, no mixed assignment
+
+NormalBook n1 {...}, n2 {...};
+AbstractBook *pa1 = &n1, *pa2 = &n2;
+*pa1 = *pa2; // won't compile
+
+// but our abstractBook operator= is protected, so the client cannot use it..
+// the code will not compile
+// so no partial assignment either, because operator= is protected
+
+Recommendation: Always make your classes that you inherit from abstract
+ - you should have an emply shell class and then Phill it up // $2.25 shots at Phill's
+
+---------------------------------Factory method pattern--------------------------------------------
+scenario: We are writing a video game
+ - there are two types of enemies..
+ - turtles and bullets
+ - idea being turtles are easier to beat than bullets
+ - system randomly sets turtles and bullets
+ - but bullets become more frequent closer to the end
+
+// insert uml here
+
+Idea is that you never know exactly which enemy is comes next, so can't call turtle/bullet 
+constructors directly
+ - instead of calling constructors directly
+ - we put a factory method in level that creates enemies
+
+class Level {
+	public:
+		virtual Enemy *createEnemy () = 0; // factory method
+		...
+};
+
+class NormalLevel: public Level {
+	public:
+		Enemy *createEnemy() override {
+			// create mostly turtles
+		}
+};
+
+class Castle: public Level {
+	public:
+		Enemy *createEnemy() override {
+			// create mostly bullets
+		}
+};
+
+// then the client:
+Level *l = new NormalLevel;
+Enemy *e = l->createEnemy(); // we dont actually know what enemy we get, but we know that it will
+// be chosen based on the rule that is created inside the appropriate level
+
+
+-----------------------------------Template Method Pattern-----------------------------------------
+want subclasses to override superclass behaviour, but some aspects must stay the same.
+
+Eg:
+There are red turtles + green turtles
+
+class Trutle {
+	public: 
+		void draw() { // only draw() is the template method
+			drawHead();
+			drawShell();
+			drawFeet(); // the only difference between green and red turtle are their shell colours
+		}
+	private:
+		void drawHead();
+		void drawFeet();
+		virtual drawShell() = 0;
+};
+// the sublclasses dont get to decide what it means to draw a turtle, they can only decide on
+// what the tutle's shell will be
+The overall behaviour cannot be changed, but we can fill in certain blanks that we give access too
+Note: 
+	sublass can't call drawShell() because its private, but it can still override it tho, to adjust
+	the colours
+
+class RedTurtle:public Turtle {
+	void drawShell() override { /*draw red shell*/ }
+};
+
+class GreenTurtle:public Turtle {
+	void drawShell() override { /*draw green shell*/ }
+};
+
+Sublasses dont have the power to change what it means to draw a turtle (i.e. head, shell, feet)
+but they can change the way the shell is drawn
+
+Apparently the template method is the most common template ever and is always encouraged
+to be used everywhere
+
+Extension: the Non-virtual Interface (NVI)
+ - a public virtual method is really two things:
+	- saying to a clint, here is a function you can call and this is what it will do
+		(a.k.a. interface to the client, with pre/post conditions)
+	- you are saying to a subclass, you can do anything you want here
+		(a.k.a. interface to subclasses, a "hook" to insert specialized behaviour)
+	// these two things don't match together very well
+
+Hard to separate these ideas if they are tied to the same functions..
+ - what if you later want to separate the customizable behaviour into two functions?
+ - thats when you make your pure virual methods pure virtual
+ - this way the client won't have to worry about changing behaviour
+ - while sublclasses can override to customize method for their purposes
+
+ - how can you make sure that overriden functions conform to the pre/post conditions
+
+The NVI idion says:
+ - "all public methods should be non-virtual"
+ - "all virtual methods should be private or at least protected"
+ - one exception, the destructor must always be public
+
+Eg:
+class DigitalMedia {
+	public:
+		virtual void play() = 0;
+};
+
+to turn it into an instance of NVI, write it like this:
+
+class DigitalMedia {
+	public:
+		void play( doPlay(); ); // can add before/after code
+		// check copyright before playing
+		// update the play count after the thing has been played
+	private:
+		virtual doPlay() = 0;
+} // now what client looks at and what subclass looks at are different
+// client can still play with consistent behaviour
+// subclass can override doPlay() for specific behaviour
+
+This extends from the template method:
+ - put every virtual method inside a template method
+
+
+------------------------------------------Maps--------------------------------------------
+"Hope these help you to navigate through the DD life"
+
+map<string, int> m;
+m["abc"] = 1;
+m["def"] = 4;
+
+cout << m["ghi"] << endl; // wont crash, will only print 0
+// the rule is that if the key is not present, it is inserted and the value is default
+// constructed. For ints that mean 0
+cout << m["abc"] << endl; // prints 1
+
+to delete
+m.erase("abc");
+
+To check if something is present in the map
+if (m.count("def")) // will return 0=notFound, 1=Found
+// there is also multimap where things can occur more than once.. 
