@@ -2208,12 +2208,12 @@ Now lets use these objects:
 Book b{"A small book", "...", 50};
 Comic c{"A big comic", "...", 40};
 
-cout << b.isItHeavy() // false
-	 << c.isItHeavy() // true
+cout << b.isItHeavy(); // false
+cout << c.isItHeavy(); // true
 
 now comes the interesting part
 	- we said that inheritance type of 'is-a'
-	- and if comic is a book ,then there are certain things we can do
+	- and if comic is a book, then there are certain things we can do
 
 Book b = Comic{"A big comic", "...", 40}; // initializing a books using a comic object
 // this is allowed, but its not what we want
@@ -2221,8 +2221,8 @@ Book b = Comic{"A big comic", "...", 40}; // initializing a books using a comic 
 Q: is b heavy now? or another way of saying it, which version of isItHeavy() runs? (Comic's method or Book's method)
 A: b.isItHeavy() will give you false, book's isItHeavy() runs
 
-Now the question is Why? 
-A: imagine what happens in memory when we do this
+Now the question is Why?
+A: Imagine what happens in memory when we do this
 Book will look something like this:
  - title
  - author
@@ -2235,7 +2235,7 @@ And the comic book is going to look like this:
 
 the compiler has enough space to only keep a book
 	- so what we are trying to do is to fit an object with 4 fields into a hole of 3 fields
-		- trying to fit a comic object where there is oly space for a book object
+		- trying to fit a comic object where there is only space for a book object
 	- at this point you lose the field hero and then you simply treat your comic as a book
 
 This phenomenon is called SLICING // the hero field is chopped off and comic is coerced into a book
@@ -2245,15 +2245,17 @@ so b = Comic {...};
 // if this was the other way, then we'd have memory leaks all the time
 
 Q: Now you may wonder, what if the comic has the same amount of fields as the Book?
-A: yes, as long as you initialize super class using a cublass, it will be sliced anyways and the superclass' members will run
+A: Does not matter, as long as you initialize super class using a cublass, it 
+	will be sliced anyways and the superclass' members will run
 
 Q: Can you initialize a comic with a book? 
-A: the question then is who is the hero? and since you can't answer this, no you can't
+A: The question then is who is the hero? and since you can't answer this, no you can't
 
 Q: what constructor gets called? 
-A: "I suppose its actually a move constructor"
+A: "I suppose it's actually a move constructor"
 
-This idea is based around limited memory spaces, but if we work with pointers, things change all of the sudden, because we dont move memory around as much
+This idea is based around limited memory spaces, but if we work with pointers, 
+	things change all of the sudden, because we dont move memory around as much
  - when accessing objects through pointers
  - slicing is uneccesary
  - and it doesn't happen
@@ -2264,23 +2266,25 @@ Book *pb = &c;
 Comic *pc = &c;
 
 cout << pc->isItHeavy() // true
-	 << pb->isItHeavy() // false
+cout << pb->isItHeavy() // false
 
- - Still, it shows that its not heavy and this time there was no slicing, we created a comic book and just pointed two pointers at it
- - Same objects behaves differently depending on what kind of pointer is pointing at it
+ - Still, it shows that its not heavy and this time there was no slicing, we created 
+ 	a comic book and just pointed two pointers at it
+ - Same object behaves differently depending on what kind of pointer is pointing at it
 
 Q: So what is the rule? what determines what method is run?
 A: The compiler is using the type of the pointer or refrence to decide which isItHeavy() to run
 	- it does not consider the actual type of the object
 
-And in many ways, this outcome is unintuitive, it means a comic is only a comic if it is pointed at by a comic pointer
+And in many ways, this outcome is unintuitive, it means a comic is only a comic 
+	if it is pointed at by a comic pointer
 // might not be what we want
 
 Imagine you sitting on your bed and pick up a heavy comic
- - you dont say that oh this is a light comic that im viewing as a book
- - you say oh, its a heavy comic
+ - you don't say that oh this is a light comic that I'm viewing as a book
+ - you say oh, it's a heavy comic
 
-How do we make comic, even when pointed at by a book?
+How do we make a comic, even when pointed at by a book?
  - Declare the method VIRTUAL!
 
 class Book {
@@ -2307,8 +2311,8 @@ Book &rb = c;
 Comic *pc = &c;
 
 cout << pc->isItHeavy() // true
-	 << pb->isItHeavy() // true
-	 << rb.isItHeavy() // true
+cout << pb->isItHeavy() // true
+cout << rb.isItHeavy() // true
 
 Override is new in C++ // only since v.11
 
@@ -2317,7 +2321,7 @@ Book *myBooks[20];
 .
 .
 .
-for (int i = 0;, i < 20, i++) {
+for (int i = 0; i < 20; i++) {
 	cout << myBooks[i]->isItHeavy() << endl;
 }
 
@@ -2380,57 +2384,58 @@ class Y final:public X {
 	....
 }
 
-
 ---------------------------Pure Virtual Methods + Abstract Classes-------------------------------
 
 class Student {
-protected:
-	int numCourses;
-public:
-	virtual int fees();
+	protected:
+		int numCourses;
+	public:
+		virtual int fees();
 }
 
-2 kinds of Student: Regular + Cooop
+2 kinds of Student: Regular + Co-op
 
 class Regular:public Student {
-pblic:
-	int fees() override;
-
+	public:
+		int fees() override;
 } // regual student's fees
 
 class Coop:public Student{
-public:
-	int fees() override;
+	public:
+		int fees() override;
 
 } // coop student's fees
 
-what should we put for Student::fees?
+What should we put for Student::fees()?
 
 Not sure, every student should be regualr or co-op
 
-Can explicitly give Student::fees No implementation
+Can explicitly give Student::fees() No implementation
 
 class Student {
-....
-public:
-	virtual int fees() = 0; // methos has no implementaion ****
-	// called a pure virtual method
+	....
+	public:
+		virtual int fees() = 0; // methos has no implementaion ****
+		// called a pure virtual method
 }
 
 A class with a pure virtual methods cannot be instantiated:
 Student s; // will not work
 
 this is called an abstract class and its purpose is to organize subclasses
+- Abstract classes are needed to create concrete subclasses out of them
+- A class is called abstract if it has one or move pure virtual methods
 
 Subclasses of an abstract class are also abstract, unless they implement the pure virtual methods.
 
-If a class is anot acstract, then its concrete
+If a class is not abstract, then its concrete
 
 UML: Virtual + pure virtual methods::italics
 
 static _____ underline
 
-At this point of time, we usually play how imheritance plays off the BIG 5, but instead he is going to focus on the assignment
+At this point of time, we usually see how inheritance plays off in the BIG 5, 
+	but instead he is going to focus on the assignment
 
 -------------------------------------Templates-------------------------------------------
 
@@ -2448,9 +2453,10 @@ struct List::Node {
 	int data;
 	Node *next;
 }
-we went to a lot of trouble to implement this, and all was good because we got it to work.
+
+We went into a lot of trouble to implement this, and all was good because we got it to work.
 Q: But what if we now want a string linked list?
-Q: do we have to write a whole new class, now?
+Q: Do we have to write a whole new class now?
 A: Yes, we do, but C++ can help us, if we create a template class parametized by a type
 
 template <typename T> class Stack {
@@ -2492,7 +2498,8 @@ List<List<int>> l2;
 l1.addToFront(3);
 l2.addToFront(l1);
 
-This list template still has a begin/end method and and interator class, so we can still iterate it, the way we did before:
+This list template still has a begin/end method and and interator class, 
+	so we can still iterate it, the way we did before:
 
 for (List<int>::Iterator it = l1.begin(); it != l1.end(); ++it) {
 	cout << *it << endl;
@@ -2504,24 +2511,27 @@ for (auto n:l1) {
 	cout << n << endl;
 }
 
-Every time we create a new class using templates, we are actually creating brand new classses, it's just that we don't see it anymore
+Every time we create a new class using templates, we are actually creating brand 
+	new classses, it's just that we don't see it anymore
 
 "this is some things about c++, it starts relatively easy, with strings and other bs and then you get into writing your own assignment operator." 
 "Suddenly, c++ will get really difficult, but there comes a point where difficulty level slows down. Right now we are going to hit a crest, where its not as difficult"
 
 -------------------------------------------The standard Template Library (STL)--------------------------------------
-much of the stuff that comes with C++ is written out as templates, so you can resue it for your own purposes
+Much of the stuff that comes with C++ is written out as templates, so you can reuse
+	it for your own purposes
 
 Large # of useful templates:
-Eg: dynamic-length arrays : VECTORS
-	In the next assignemnt (4), it says you are not allowed to use array's functions delete and new, because they want us to use this:
+Eg: dynamic-length arrays: VECTORS
+	In the next assignemnt (4), it says you are not allowed to use array's functions
+	delete and new, because they want us to use this:
 	vectors will manage all the heap allocated arrays for you
 
 #include <vector> // we have to be a little bit careful here
 using namespace std;
 
 // recall the curly brackets vs. round brackets argument
-// in generall curly is for c++ and round for c, so you shoul dbe using curly 99% of the time
+// in general curly is for c++ and round for c, so you should be using curly 99% of the time
 // except for this time, tho. ik, its ucked up
 
 vector<int> v {4, 5}; // gives you a vec(4, 5)
@@ -2551,7 +2561,7 @@ for (auto n:v) {
 	cout << n << endl;
 }
 
-Wow, he brouoght up the midterm...
+Wow, he brought up the frist midterm...
 
 To iterate in reverse:
 for (vector<int>::reverse_iterator it = v.rbegin(); it != v.rend(); ++it) {
@@ -2563,16 +2573,17 @@ v.pop.back() // remove last element
 Use iterators to remove from inside a vector:
 	auto it = erase(v.begin()); // erases element 0
 	it = v.erase(v.begin() + 3) // erases item 3
-// vectors' interators support pointer arithmetics
-// not all interators are created equal, so not all of them can do it 
+// vectors' iterators support pointer arithmetics
+// not all iterators are created equal, so not all of them can do it 
 // One of the rules that comes to vectors, when you use anything that shuffles items around (deleting elements),
 // you shold not be using iterators with deletion of elements
 
-instaed, use this:
+instead, use this:
 it = v.erase(it); // erases item pointed at by it
 it = v.erase(e.end() - 1); // returns an iterator to the item past the item jsut removed.
 
-Now that we are allowed to use vectors, we should emprace them... We have just eliminated an entire class of memory management
+Now that we are allowed to use vectors, we should embrace them... We have just 
+	eliminated an entire class of memory management
 
 v[i] - returns the ith element of v // this method call is completely unchecked, just like with arrays
 // if you go out of bounds, you are in for some fun behaviour
@@ -2589,7 +2600,8 @@ Problem:
 
 C solution:
 	- if a function fails, it returns status code
-	- set the global variable "errno" to an error code, but then you are supposed to check it all the time, but ain't nobody got time for that
+	- set the global variable "errno" to an error code, but then you are supposed 
+		to check it all the time, but ain't nobody got time for that
 	// now we have this entire mess that discourages programmers to do error checks, because they are inconvenient
 
 C++ solution:
@@ -2601,21 +2613,21 @@ vector<T>::at() raises an exeption std::out_of_range, when it fails
 
 #include <stdexcept>
 .....
-try { // inside the curly brackets go the statemnts that might faild due to specified error
+try { // inside the curly brackets go the statemnts that might fail due to specified error
 	cout << v.at(1000000000000) << endl;
 } catch (out_of_range r) {
 	cerr << "Range error: " << r.what() << endl;
 } // you are allowed to ask what? Which will give you some extra info on the error
 
 
-----------------------------Exceptions------------------------
+------------------------------------Exceptions----------------------------------
 Now consider:
 void f () {
 	throw out_of_range{"f"} // "f" is what()
 }
+
 void g() {f();}
 void h() {g();}
-
 
 What happens:
 	- main calls h
@@ -2624,7 +2636,6 @@ What happens:
 	- f throws out_of_range
 
 // enter more here
-
 
 A handler can do part of the recovery job // execute some corrective code
  + raise another exception
@@ -2638,11 +2649,11 @@ catch (Some_type s) {
 
 Throw VS. Throws:
 	Since exceptions are classes, we can also have subclasses
-	class SomeType {
-		class SpecialSomeType {
-		...
-		}
+class SomeType {
+	class SpecialSomeType {
+	...
 	}
+}
 
 "This is similar to pass by reference vs. pass by value"
 Throw: actual type of s is retained 
@@ -2653,14 +2664,12 @@ Throws creates a new exception of type SomeType, even if s itself was already sp
 
 Occasionally, you want to say, idc what type of error it is, i simply want to catch it
 - No, you cant do that 
-// there is a top level exception type, and all the otehr types inherit from it 
+// there is a top level exception type, and all the other types inherit from it 
 - but you might still want to do it, but how? 
 
 "A handler can act as a catch-all":
 try {....} // these dots stand for the code
-catch (...) { // you must put the three dots in to catch all exceptions, like "..."
-
-}
+catch (...) { // you must put the three dots in to catch all exceptions, like "..."}
 
 Apparently exceptions that you throw, don't actually have to be objects, so you 
 can't call .what() on all of them, because they simply dont have that method
@@ -2672,10 +2681,10 @@ lectures/c++/exceptions/exfib.cc
 
 new helper thing in Ubuntu:
 	time ./myprog // to see how long the program takes
-	- you look for "user" for acutal time of your code
-	- "real" means how long you took to run your ptogram
+	- you look for "user" for acutal time for your code to execute
+	- "real" means how long you took to run your program
 
-Ok so he did the following:
+OK so he did the following:
 	- he timed his recursive fibonacci sequence and timed his exfib.cc function
 	- the recursive ran in 0.018s and the one with exceptions took 11.716s
 
@@ -2687,7 +2696,7 @@ class BadInput {};
 
 try {
 	int n;
-	if (!(cin >> in)) therowBadInput{};
+	if (!(cin >> in)) throw BadInput{};
 } catch (BadInput &s) {
 	cerr << "input not well-formed" << endl; 
 	// HE caught the exception by reference this time and in general thats what you
@@ -2697,8 +2706,8 @@ try {
 Q: why catch by reference? 
 A: 
 - supresses copying
-- exception that you caught might be a subtyoe and you dont want it to be sliced
-- its the proper way to work with objects
+- exception that you caught might be a subtype and you don't want it to be sliced
+- it's the proper way to work with objects
 
 Some standard exceptions:
 - length_error // attempting to resize strings/vectors that are too long
@@ -2713,7 +2722,7 @@ We are going back to Design Patterns
 ------------------------------Guiding Principle---------------------------------
 Guiding principle: program to the interface, not the implementation:
 - You start with an abstract base class, to define the interface
-- You work with pointers to  abstract base classes and call their methods
+- You work with pointers to abstract base classes and call their methods
 - Concrete classes can be swapped in/out
 - It gives you abstraction over variety of behaviours
 
@@ -2808,7 +2817,7 @@ Example: Horse Races
 - observers: individual betters 
 			- declare victory when their horse wins
 
-Lets write this // damn son
+Let's write this // damn son
 
 class Subject {
 	vector<Observer*> observers;
@@ -2822,8 +2831,8 @@ class Subject {
 }
 
 Now, we have a problem // he points to the subjcet class
-"This class is not abstract, it doesn't have any vitrtual methods"
-"Here is the trcik if you want abstract class and dont have any methods that are virtual"
+"This class is not abstract, it doesn't have any virtual methods"
+"Here is the trick if you want abstract class and dont have any methods that are virtual"
 "You make the destructor pure virtual"
 
 NOTE: a virtual destructor must always be implemented!!!!
@@ -2832,30 +2841,12 @@ Subject::~Subject() {...};
 
 Why? because when destrcutor is run, the super class destructor will be called, so it better exist
 
-
-Now we are actually writing out the Observer Pattern
-
-class Subject {
-	vector <Observer*> observers;
-	public:
-		void attach(Observer *o);
-		void detach(Observer *o);
-		void notifyObservers() {
-			for (auto &ob:observers) ob->notify();
-		}
-		virtual ~Subject() = 0;
-}
-Subject::~Subject() {}
-
-
 public Observer {
 	public:
 		virtual void notify() = 0;
 		virtual ~Observer();
 };
 Observer::~Observer() {};
-
-
 
 class HorseRace: public Subject {
 	ifstream in; // source of data
@@ -3328,3 +3319,9 @@ m.erase("abc");
 To check if something is present in the map
 if (m.count("def")) // will return 0=notFound, 1=Found
 // there is also multimap where things can occur more than once.. 
+
+
+
+
+
+
