@@ -3320,8 +3320,516 @@ To check if something is present in the map
 if (m.count("def")) // will return 0=notFound, 1=Found
 // there is also multimap where things can occur more than once.. 
 
+---------------------------------------Iterating over maps----------------------------------------
+supports iterator objects
+ - returns objects in sorted order by key
+ - implemented as a binary serch tree
 
+if you want to get data in the order that you put them in, then you are using the wrong data structure
 
+for (auto &p:m) {
+	cout << p.first << " " << p.second << endl;
+}
 
+p's type is std::pair<string,int> found in <utility>
 
+p.first and p.second are fields, not methods
+"Pair is unique because it is declared as a struct, not a class"
+
+is it bad that everything is accessible together? 
+ - the goal of pair is to stick two things together
+ - if you want encapsulation, then you should do something about it
+ - so as long as we are talking about objectives of pair, its doing just fine
+
+-------------------------------------Visitor Pattern-----------------------------------------------
+
+For implementing double dispatch
+
+Eg:
+getting back to the game example:
+
+we have abstract class Enemy:
+ - we have a subclass Turtle
+ - we have a subclass Bullet
+
+we have an abstract class Weapon:
+ - we have subclass stick
+ - we have subclass Rock
+
+- effect of a weapon depends on type of enemy and type of weapon
+
+We want something like this:
+	virtual void(Enemy, Weapon)::strike(); // inspiration, not actual code
+If we put this method in Enemy - choose based on enemy, not weapon
+If we put it in method Weapon - we choose based on weapon, not enemy
+
+To get dispatch based on both (double dispatch) 
+ - trick of combining virtual method overriding with overloading
+
+class Enemy {
+	virtual void beStruckBy(Weapon &w) = 0;
+};
+
+class Turtle: public Enemy {
+	void beStruckBy (Weapon &w) override {
+		w.strike(*this);
+	}
+}
+
+class Bullet: public Enemy {
+	void beStruckBy(Weapon &w) override {
+		w.strike(*this);
+	}
+}
+// notice that the both implenmentaions have the same code
+// why didnt we just put that code in out abstract class?
+"But, i claim that these two methods are not the same" 
+and this is true because we have different this objects that are calling the function
+ - this is where the overloading comes in, we are going to be calling two different versions of strike
+ based on which *this called it
+ 
+class Weapon {
+	virtual void strike (Turtle &t) = 0;
+	virtual void strike (Bullet &t) = 0;
+	// we have a turtle version of strike and a bullet version of strike
+}
+
+class Stick:public Weapon {
+	void strike (Turtle &t) override {
+		// we know that this is striking turtle with a stick
+	}
+	void strike (Bullet &b) override {
+		// we know that this is striking bullet with a stick
+	}
+}
+
+// you client will end up with something like this:
+
+Enemy *e = new Bullet{....};
+Weapon *w = new Rock{...};
+e->strike(*w);
+// so what happens here?
+// how does it all work?
+ - we start with a fact that bestruckby is a virtual method of enemy
+ - so we know that the type of enemy we have is a bullet
+ - bullet.bestruckby() runs and calls weapons stike, where *this has type bullet
+ - therefore the bullet's version of weapon::strike is chosen at compiling 
+ - since both of weapon's methods are virtual, we end up taking the rock version of it
+ - runs rock::strike(Bullet &)
+ 
+There is another use for the Visitor Pattern and its going to look completely different:
+ - Visitor can be used to add functionality to existing classes, without changing or recompiling the
+   classes themselves
+   
+Eg: add a visitor to the Book hierarchy
+
+class Book { // book is same as enemy in prev example
+public:
+	virtual void accept(BookVisitor &v) { v.visit(*this); }
+	// if you just leave a visitor here you can let someone else decide what the visitor does to the book
+	// and write code for it later
+}
+
+class Text:public Book {
+public:
+	void accept (BookVisitor &v) override {
+		v.visit(*this);
+	}
+	// accept is the same as the bestruckby in the prev example
+}
+
+class BookVisitor { // same as the weapon in prev example
+	virtual void visit(Book &b) = 0;
+	virtual void visit(Text &t) = 0;
+	virtual void visit(Comic &c) = 0;
+	// this visit does the same thing as what strike did before
+}
+
+"What do i do with this now? what is this good for?"
+ - we want to have something that acts as a virtual function, but does different things
+ 
+Application:
+ - Track how many of each type of books we have
+ - for books, want to categorize by author
+ - for text, want to categorize by topic
+ - for comics, want to categorize by hero
+ 
+Use a map<string,int>
+Could add a virutual updateMap method to each class, but instead we are going to write a visitor
+
+class Catalogue:public BookVisitor {
+	map<string,int> theCatalogue;
+public:
+	map<string,int> getCatalogue() {return theCatalogue;}
+	void visit(Book &b) override {
+		++theCatalogue[b.getAuthor()];
+	} // what if the author is not there, it will make it automatically with count 0
+	// but the since we are incrementing by 1 ont he spot, we get count of 1 at the end
+	void visit(Text &t) override {
+		++theCatalogue[t.getTopic()];
+	}
+	void visit(Comic &c) override {
+		++theCatalogue[c.getHero()];
+	}
+}
+
+// damn, son.. holy sweet god - jesus
+
+Ok, so he tried compiling it and it didn't work
+
+main -> includes Book -> includes BookVisitor -> includes Text
+
+if text inherits from book, then it should know about it before we declare text, so now we have this:
+
+main -> includes Book -> includes BookVisitor -> includes Text -> includes Book
+// won't include the book again because of the include guide
+
+Now we have a circular include dependency 
+
+So:
+ - text doesn't know what book is
+ - we ask ourselves: how many of these includes are really needed
+ 
+Q: when do you really need to include? and when you can get away with forward declaring?
+
+Consider: Suppose we have a class A
+
+class A {....};
+
+// #include "A.h"
+class B:public A {...};
+
+// #include "A.h"
+class C {
+	A myA;
+}
+
+// class A;
+class D {
+	A* myAp;
+}
+
+// class A;
+class E {
+	A f(A *);
+}
+
+The question is which of these 4 require include and which are ok with just a forward declaration?
+ - D doesn't need one
+ 	because D doesn't need to know how big A is in order to initialize D (add class A;)
+ 	// pointers are all the same size
+ 	
+ - C does need one because it wants to know the size of A
+ 
+ - B need to know all the fields of A
+ 
+ - E doesn't need one either. 
+ 	Does size of A affect the E? 
+
+Moral: "If you don't need an include, then don't do it"
+When class A changes -> only A, B, C need recompilation
+
+Now, keep in mind again that its a whole different story in .cc files
+
+In the implementions of D, E:
+"d.cc"
+	void D::f() {
+		myAp->someFunction(); // now i need to know about class A
+	}
+// though you still include your A.h here, you only do it in the .cc file
+
+Do the #include in the .cc file, instead of the .h file (where possible)
+// you can include as many .h in your .cc files as you want
+// this is because you never inlude .cc files from .cc files
+
+Now lets get this thing working!
+
+"He is not quite done on compilatio dependencies" 
+
+Now consider the Xwindow class:
+ 
+class XWindow {
+	Display *d;
+	Window w;
+	int s;
+	GC gc;
+	unsigned long colours[10];
+public:
+	.....
+}
+// Do you know what these fields do? 
+// you actually dont have to know, beacause they are private data, you should not care about it?
+// if this is private data and I can't interact with it anyways, why must I see them?
+
+"This is an esthetic element, where we dont care about the fields, so we don't want to see them"
+"If we add or change a private memeber - all clients must recompile"
+
+ - It may be better to hide these things even more than when they are private
+ 
+------------------------------------------Bridge Pattern-------------------------------------------
+
+Solution: the pimpl idiom
+ - short for "pointer implementation"
+ - to do it, you move all the private fields into a separate class and simply point to it
+ 
+create a class XWindowImpl:
+"XWindowImpl.h"
+#include <X11/Xlib.h>
+
+struct XWindowImpl {
+	Display *d;
+	Window w;
+	int s;
+	GC gc;
+	unsigned long colours[10];
+} // it has all the private data
+
+then our "Window.h" will look like the following
+
+class XWindowImpl; // no need to include Xlib.h, forward declare the implementation class
+
+class XWindow {
+	XWindowImpl *pimpl; // since pointer fields dont require includes, there is no compilation 
+	// dependencies on XWindowImpl.h
+	// clients also dont depend on XWindowImpl
+public:
+	... // no change here
+}
+
+So no matter what we change in XWindowImpl.h, client won't have to recompile
+
+"Window.cc"
+#include "Window.h"
+#include "XWindowImpl.h"
+
+XWindow::XWindow(): pImpl{new XWindowImpl{}} {};
+other methods: replace fields s, w, s, etc.
+with pImpl->s, pImpl->w, pImpl->s, etc.
+
+So if all the private fields are in XWindowImpl, then only the window.cc will need recompiling,
+	if they change
+
+Generalization:
+ - What if there are several possible implementations?
+ 
+ Eg:
+ XWindows, YWindows
+  - then the Impl structure can be a superclass
+
+This is called Bridge Pattern
+
+------------------------------------Measures of design quality--------------------------------------
+
+ - coupling and cohesion // the main two ideas behing good design
+ 
+Spectrum of the tightness of relationships between modules:
+-----------------------------------------------------------
+coupling: the degree to which distinct program modules depend on each other
+	low: 
+	 - modules interact via function calls with basic parameters and results
+	low-medium:
+	 - modules pass arrays/structs back and forth
+	medium:
+	 - modules affect each other's control flow
+	medium-high:
+	 - modules share global data // not great because you dont know what happens to the global data
+	high:
+	 - modules have access to each other's implementation (they are friends)
+
+"I claim that if i want to, i can achieve perfect coupling, where coupling is 0"
+// you can achieve that by putting everything into the same module
+While you want to keep coupling down, you also want the cohesion, so simply using one file is not a 
+solution in this case
+
+Spectrum of cohesion between modules:
+-------------------------------------
+Cohesion: how closely elements of a module are related to each other
+	low:
+	 - arbitary grouping of unrelated elements (eg. <utility>) 
+	low-medium:
+	 - elements share a common theme, but otherwise unrelated; share some base code (eg. <algorithm>)
+	medium:
+	 - elements manipulate state over the lieftime of an object (eg. open/read/close files)
+	 // related because they all help you to deal with files starting with open, ending with close
+	medium-high:
+	 - elements pass data to each other // implies that they call each other and one cannot exist 
+	 // without another
+	high:
+	 - elements cooperate to perform exactly one task 
+
+Idea is that:
+ high coupling -> changes to one module require greater changes to other modules
+ 				- harder to reuse individual modules
+ 				
+ low cohesion -> poorly orgaized code
+ 				- hard to understand and maintain
+
+"I claim that i can also achieve perfect cohesion"
+// you can do that by putting everything into its own modules
+
+So the GOAL is lowest coupling and highest cohesion!
+
+-------------------------------------Decoupling the interface (MVC)---------------------------------
+"Your primary program classes should not be printing things"
+
+No matter how tempting it might be, you should never write anything on the screen
+
+here is an example:
+Suppose you are writing a Chess game
+
+class ChessBoard{
+	...
+	...
+	...
+	cout << "Your move" << endl; // he is calling this bad design
+}
+this is bad design because it inhibits code reuse, this is an instance of coupling
+// we coupled our ChessBoard to cout
+
+What if you want to reuse the ChessBoard, but not communicate via stdout?
+What if isntead, you want this thing going on a network and printing it there?
+
+Not very convenient if you have this hardcoded into the class
+
+one of the solutions is instead of printing to stdout, you provide class with stream objects, 
+where it can simply send its output using those
+
+then you will get a class like the following:
+class ChessBoard {
+	std::istream &in;
+	std::ostream &out;	
+public:
+	ChessBoard (std::istream &in, std::ostream &out): in{in}, out{out} {....};
+	....
+	....
+	out << "Your move" << endl; // now our class can print to files and not only stdin
+	....
+	....
+}
+This is definitely better, but its still not perfect. 
+What if we don't want to use streams at all?
+What if i want to implement graphical window now, instead of printing things to the screen?
+You might also want to implement variety of languages
+
+Your ChessBoard class should not be doing any communications at all
+
+	Single responsibility principle:
+	--------------------------------
+	"A class should have only one reason to change"
+	- game state and communications are two reasons // which is not good
+	
+So what would be better?
+	if your chessBoard is not supposed to be speaking to the user, then someone else should do it
+	but your chessboard should still be able to deliver messages to the user
+	
+BETTER - communicate with the ChessBoard via params/results
+	- Confine user communication to outside the class
+	
+Q: who should do all the talking? should it be main() and then call chessboard methods?
+
+A: No, hard to reuse code if its in main.
+	should have a class class to manage interaction, that is separate from the game state class
+	
+---------------------------------Model-View-Controller Pattern--------------------------------------
+Developed back in the day by Xerox
+
+Idea is to separate the distinct notions of data (state), its presentation, and the control of the 
+data
+
+"Model": is the data (game state)
+"View": is how the model is displayed
+"Controller": how the model is manipulated
+
+-------     ------
+|Model|-----|View|
+-------     ------
+   \          /
+    \        /
+   ------------
+   |Controller|
+   ------------
+// Damn this took a while
+
+Model:
+ - can have multiple views (eg. text+graphics)
+ - doesn't need to know their details
+ - classic observer pattern (or communicate through controller)
+ 
+Controller:
+ - mediates control flow through model and view
+ - may encapsulate things like turn-taking, or may be responsible for the full set of game rules
+ - may fetch input from the user (or this could be the view)
+ 
+"By decoupling presentation and control, MVC promotes reuse" 
+// should use this in your project because it will result in great design
+
+"Now the technical part!!!"
+
+------------------------------------------Exception safety------------------------------------------
+Consider:
+void f() {
+	MyClass *p = new MyClass;
+	myClass mp;
+	
+	g();
+	delete p;
+} // assuming this is not going to leak
+// except for one possibility.. what if g() raises an exception
+
+What is guaranteed when that happens?
+ - During stack unwinding, all stack allocated data is cleaned up
+ 	- destructors run, memory reclaimed
+ - so MC is cleaned up
+ - HEAP allocated data is not freed tho
+ - if g() throws, p is leaked
+ 
+How to fix this function, so that it does not leak?
+
+void f() {
+	MyClass *p = new MyClass;
+	MyClass mc;
+	try {
+		g();
+	} catch (...) {
+		delete p;
+		throw;
+	}
+	delete p; // this is UGLY AF and you also get DUPLICATED CODE you dumbass
+} // this is still not enough, because if g() does not throw, we still need to delete p
+
+This is tedious, error-prone and causes duplication
+
+So how else can we guarantee that something like delete p will happen no matter how we exit f()?
+ - In some languages there are finally clauses, that guarantee final actions
+ - C++ does not support those tho :(
+ - the only thing you can count on in C++ is that destructors for stack allocated data will run
+ - the point is that you should use the stack-allocated data with destructors as much as possible
+ - use this guarantee that everything on the stack will be deleted to your advantage
+ 
+C++ idiom: RAII - Resource Aquisition Is Initialization // final exam
+ means that every resource should be wrapped in a stack allocated object, whose destructor deletes or
+ frees it
+ 
+One of the very first things that we saw in this class was an example of RAII
+Eg: files
+
+ifstream f {"name"}; // acquiring file is accomplished by initialization
+// acquiring the resource {"name"} = initializing the object (f)
+// the file is guaranteed to be released when f is popped off the stack (f's destructor runs)
+
+Turns out you can do something very similar with dynamic memory!
+
+What if everytime you allocate memory on the heap, you gave it to an object sitting on the stack
+ so that it is destroyed every time its popped of the stack. This way you will NEVER LEAK
+ 
+class std::unique_ptr<T>
+ - takes in a T* in the constructor
+ - the destructor will delete the pointer
+ 
+void f() {
+	auto p = std::make_unique<MyClass>(); // can write the type as std::unique_ptr<MyClass>
+	MyClass mc;
+	
+	g();
+} // this is guaranteed no leaks !!!
 
