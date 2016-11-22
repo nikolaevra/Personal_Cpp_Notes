@@ -3833,3 +3833,245 @@ void f() {
 	g();
 } // this is guaranteed no leaks !!!
 
+The difficulty with this system:
+class C {...};
+
+unique_ptr<C> p {new C{}}
+uniqie_ptr<C> q = p; // this is potentially trouble
+
+Now we have two unique pointers that are both pointing to the same thing and both of which will try
+freeing when stack is deallocated, which will cause the program to crash
+
+So how should we behave when we want a copy of the pointer, but dont want to delete twice?
+ - C++ really doesn't want you to do that, so copying is disabled for unique_ptr
+ - but the good news is that they can be MOVED!! // lol, turnup!
+
+How do you return a smart pointer from a function if its going to be destroyed?
+ - you move the smart pointer to your return value
+ 
+wowoow, "At this point we have enough skill to write unique_ptr ourselves"
+
+Sample implementation (check repository for more)
+
+template <typename T> class unique_ptr {
+	T *ptr;
+public:
+	unique_ptr(T *p): p{p} {}
+	~unique_ptr() {delete ptr;}
+	unique_ptr(const unique_ptr<T> &other) = delete; // this way we say take it away, we dont want it
+	unique_ptr<T> &operator= (const unique_ptr<T> &other) = delete;
+	unique_ptr(unique_ptr<T> &&other): ptr{other.ptr} {
+		 other.ptr=nullptr;
+	}
+	unique_ptr<T> &operator= (unique_ptr<T> &&other) {
+		 using std::swap;
+		 swap(ptr, other.ptr);
+		 return *this;
+	}
+	//these are supposed to act like pointers, so we have to add operator*,
+	T &operator* () {
+		return *ptr;
+	}
+	// in the repository you can also see the arrow operator
+}
+
+NEVER, EVER let the destructor emit an exception
+
+Imagine that there is a ball flying at you and you duck, but while you are ducking, you throw another
+ball, which means that there are two balls flying in yo face!
+ - if the destructor was executed during stack unwinding dealing with another exception, then now you
+   have two active, unhandled exceptions and the program will abort immidiately
+   
+MORAL: whatever you do ever in your life, whoever you become after completing DD and making it in this 
+	huge world, whereever you end up on the map of our planet (possible mars by then), just remember 
+	that you never throw in destructors
+	
+----------------------------------3 Levels of exception safety--------------------------------------
+
+// remember these things word-by-word, shows up on the final  
+1. Basic Guarantee - if an exception occurs, the program will be in a valid state - nothing leaked,
+	 nothing corrupted, class invariants maintained
+	 // says that the program is runnable, tells you that its in a valid state, but doesn't tell you
+	 // what state its in tho
+	 
+2. Strong Guarantee - if an exception is raised while executing f(), the state of the program will be
+	as it was before f() was called // exception will still happen tho
+	// we now know that either f() never run, or that f() ran and completed successfully
+
+3. No-throw Guarantee - an exception will not be thrown when running f(), but we also promise that 
+	f() will actually accomplish its purpose
+	
+	
+Suppose then:
+class A {...};
+class B {...};
+class C {
+	A a;
+	B b;
+	
+	void f() {
+		a.method1();
+		b.method2();
+	 } // we are told that both of these methods may trow, but they offer strong guarantee
+};
+
+Question is: Is C::f() exception safe?
+A: let's go step-by-step and imagine what happens if: 
+	- method1 throws:
+		- it offers strong guarantee
+		- so nothing happened yet, because the method didn't change anything
+	- method2 throws
+		- then method1 has already run
+		- if we want to offer strong guarantee, we want to undo effects of method1
+		
+But how do you undo effects of one method? what if method1 printed something to the screen?
+ - It is usually very hard or impossible to undo something if method1 has non-local side-effects
+
+So the answer is "No, its not exception safe"
+
+so if a is A::method1 one and B::method2 do not have non-local side-effects, then we can use a 
+technique that we already know
+ - We can use our good old friend of copy and swap
+ - we make a copy, apply methods to it, if nothing was thrown, then we swap the copy for the original
+ 
+class C {
+	...
+	void f() {
+		A atemp = a; // could these throw?  
+		B btemp = b; // yes, ofcourse
+		// but the original a and b are still safe, so we are in the safezone
+		
+		temp.method1(); // if these throw, we are safe, because a and b are unchaged
+		temp.method2();
+		
+		a = atemp; // if a throws, we are still good
+		b = btemp; // if b throws, then its bad because a changed already
+	}
+}
+
+Why is this better?
+ - if either one of the methods throw, then f is terminated, but the original a and b are the same
+ - there is a fly in the ointment.. 
+ 	- what if copy assignment throws?
+ 	- it would be better if swap was nothrow
+ 	
+Solution, use the PIMPL idiom:
+struct CImpl {
+	A a;
+	B b;
+};
+
+class C {
+	unique_ptr<CImpl> -Imp;;
+	....
+	void f() {
+		auto temp = make_unique<CImpl>(*pImpl); // new pimpl struct on the heap, copy of the old one
+		temp->a.method1();
+		temp->b.method2();
+		std::swap(pImpl, temp); // no-throw guaranteed
+	}
+}
+ 	
+If either A::method1() or B::method2() offer no exception safety guarantee, then neither can f()
+
+
+---------------------------------Exception safety and the STL:vectors-------------------------------
+What do we know about vectors?
+ - vectors encapsulate a heap allocated array
+ 	- it complied with the RAII, where a stack allocated object manages the heap allocated data
+ 	- when a stack allocated object goes out of scope, the internal heap allocated array is freed
+ 	
+void f() {
+	vector <MyClass> v;
+	....
+	....
+	// eventually v goes out of scope, at that point, the array is free and MyClass destructor runs
+	// on all objects in the vector. Memory management? what is that? we balling out here!
+}
+
+BUT what if:
+void g() {
+	vector <MyClass*> v;
+	...
+	...
+	// now if it goes out of scope, the array is freed, just like before, but there is something differen here
+	// pointers don't have destructors, so this could be a potential memory leak, as ny aobject
+	// pointed to by a pointer are not freed, DAMN son, A4 in a nutshell
+}
+
+Vector is saying that idk who are the owners of those objects, idk if they are on the heap or stack
+So I'm not going to delete it, you deal with them because you probably know more // if not - drop out
+ - if vector does not own them, then it should not delete them, and its not a memory leak
+ 
+but, if vector does own them, then do this:
+	for (auto x:v) delete x;
+	
+But we were trying to get rid of all the explicit memory management tho..
+
+Consider the following then:
+void h() {
+	vector<shared_ptr<MyClass>> v;
+	...
+	// and we are back to the happy place, where you dont have to delete anything
+	// the array is freed, the shared pointer desructor is run only when all the objects stop pointing
+	// at it. Once again, there is no explicit deallocation, which is magical
+}
+
+"Hopefully you are starting to see that you can write code without ever calling delete" // hint, A5
+
+So should all of your vectors have shared pointers now? not really, think about the Observer pattern?
+// if the vector does not own the objects, then you shold only delete the array, not the objects
+// someone else will delete the objects because they have a different owner
+
+
+--------------------------------------Shared Pointers-----------------------------------------------
+
+If you really need to copy pointers and you can't distinguish an owner, there is an alternative:
+ - std::shared_ptr
+ 
+{ // opening up a scope 
+auto p1 = std::make_shared<MyClass>();
+	if (...) {
+		auto p2 = p1; // so now we have a shared pointer, both of them pointing to the same thing
+		// both have a destructor that will delete the object
+	} // when we are at the end of this scope, the p2 is popped, but the pointer is not deleted
+	
+} // at the end of this scope, the p1 is popped and then the pointer is deleted
+
+Shared pointers maintain reference count
+ - count of all shared pointers pointing at the same object
+ - memory is freed, only when the reference count hits 0
+ 
+"If unique pointer was a game changer, this is an even bigger game changer"
+"You pobably wondering what this racker shit means here" 
+
+(define l1 (cons 1 (cons 2 (cons 3 empty))))
+(define l2 (cons 4 (rest l1)))
+
+What is so speacial about these lists? 
+they look like this: 
+ 1 - 2 - 3
+ 	/
+   /
+  4
+
+Writing this in C++ is almost impossible, because you dont know who frees what and then you will have
+a crapload of delete calls and they will crash your program
+
+But now that we know about shared_ptr, we can do it, because they will delete automatically
+ - this is almost the same as garbage collectors
+ - garbage collectors dont do everything you need them to do (collect files and other shit)
+ - so C++ is the master race and is better than any other language with garbage collection
+ 
+Use shared pointers as much as you can, it will dramatically reduce the number of memory leaks
+
+Does that mean that you will never have raw pointers? 
+ - no you still need them, but when you do use them, it means that they have no owner
+ - noone will own it so noone will delete it
+ - if 1 object owns it, then use unique_ptr
+ - if 1+ object owns it, then use shared_ptr
+ 
+"He is like: we are going to cover some of the most difficult material in the course, but it is great"
+
+
+
