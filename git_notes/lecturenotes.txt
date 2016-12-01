@@ -4074,4 +4074,692 @@ Does that mean that you will never have raw pointers?
 "He is like: we are going to cover some of the most difficult material in the course, but it is great"
 
 
+----------------------------------------------Casting-----------------------------------------------
+"A cast is a way to force an object to be treated as if it was a different type"
+
+Eg:
+Node n;
+int *p = (int*)&n; // we are saying, force that to be treated like a pointer to an int
+
+Casting is not usually a good idea, means that you are lying to a complier
+As the saying goes: "If you lie to your compiler, it will have its revenge!!!"
+
+C-style casts should be avoided in C++
+
+but C++ also recognizes that sometimes you do actually have to do it
+ - if you must cast, you a C++ cast style
+ - C++ says that i know that casting is bad, so i will give you 4 different ways to do them:
+ 	// as we go through all of them, you will see how bad casting is and why having more types of 
+ 	// casting is actually better
+ 	- static_cast - "sensible" casts
+ 		Eg: casting double to int:
+ 		double d;
+ 		void f(int i);
+ 		void f(double i);
+ 		f (static_cast<int>(d));
+		
+		Eg: casting superclass pointer as a subclass pointer
+		// going upwards, is easy, because of inheritance
+		Book *b = new Text {...};
+		Text *t = static_cast<Text*>(b); // we know its safe, because we are reverting from text
+		// but we are still telling lies to the comiler
+		What happens if that object is not a text? 
+			-> Unpredicted behaviour
+			-> we are hoping that compiler trusts us
+			-> and we are taking all of the responsibility that b is actually pointing to a Text
+		// hopefully you start to see the advantage to the C++ casting logic
+		// if you do have a bug in your program, first thing that you want to do is check your casting
+		// you will searching for cast, you can simply egrep for "static_cast"
+		// whereas with C notation you can't search for it
+		// why we need 4 types of cast? because C cast might have more than one consequence of casting
+		// wereas with 4 different types, casting is more precise
+			
+	- reinterpret_cast - for unsafe, implementation-specific, weird casts
+		Eg: 
+		Student s;
+		Turtle *t = reinterpret_cast<Turtle*>(&s);\
+		
+		"You are only promised that if you cast and then cast back to the old type, you will get the same thing"
+		// this is for "I know this makes no sense"
+		// but i trust the compiler to do the right thing in this case
+		
+		"Reinterpret cast does not change the type of the existing objct"
+		"Casting allows you to look at the object through a different lense"
+
+		// there are some cool things that you can do with reinterpret_cast
+		// you can create a similar class and reinterpret the original class as the new class
+		// then, if your new class has identical public fields, you can change the private fields of
+		// the original object
+		
+	- const_cast - for converting between const and non-const
+		the only C++ cast that can cast away constants
+		// it is not for changing constant variables, because those are store in private memory
+		
+		Eg: you have a library function
+		void g(int *p); // given to you
+		
+		void f(const int *p) {
+			g(p); // this won't compile, because g might change the p
+			// what if i happen to know that g does not change p, it was just the error in the signature
+			// then you do this:
+			g(const_cast<int*>(p));
+		}
+		
+		const poisoning - The idea that as soon as you introduce const in one function, you will have
+		to change all other fucntions to be const too
+		// instead you can cast const, but its actually not a good idea, instead fix your const errors
+		
+	- dynamic_cast - Is it safe to convert a Book* to a Text*?
+		Book *pb;
+		static_cast<Text*>(pb)->getTopic(); // is it safe?
+		// depends on what pb actually points at
+		
+		
+		Better to do a tentative cast // try and see if it succeeds
+		
+		Book *pb = _______;
+		Text *pt=dynamic_cast<Text*>(pb);
+		// if the cast works (pb really points at a Text, or at a subclass of Text) pt points that that object 
+		// if the cast fails, pt will be a nullptr
+		
+		if (pt) cout << pt->getTopic() << endl;
+		else cout << "Not a Text" << endl;
+		
+		
+Now we want to know if we can do the same thing on smart pointers?
+	- Yes, only the name of the functions is a little bit different
+	- static_pointer_cast
+	- const_pointer_cast
+	- dynamic_pointer_cast
+	- this is for casting shared_ptr to shared_ptr
+	
+Now we want to try to use dynamic_cast to make decisions cased on objects RTTI (run-time type information)
+	void whatIsIt (shared_ptr<Book>b) {
+		if (dynamic_pointer_cast<Comic>(b)) cout << "Comic";
+		else if (dynamic_pointer_cast<Text>(b)) cout << "Text";
+		else cout << "Book";
+	}
+	This is legal, but this is generally not a good idea
+	 - This is against the OOP
+	 - in OOP you should aim at abstraction, where you don't care what subclass you are using
+	 - everytime you make a new sublass, you will have to change your code
+	 - this code is highly coupled to the book class hierarchy and causes bad design
+
+	 
+	 Better: use virtual methods or write a visitor
+	 
+Note: dynamic casting only works on classes with at least one virtual method
+Note: dynamic cast also works with references
+	Text {...}
+	Book &b = t;
+	Text &t2 = dynamic_cast<Text&>(b);
+	// if b points t a Text, t2 is a reference to same Text
+	// what if it does not tho?
+	// there is no such thing as null reference, so you get an exception
+	
+One example when dynamic casting is really useful:
+ - with dynamic casting we can solve polymorhic assignment problem, that involves book, text, comic
+ - now we are going to write the mixed assignment operator!
+ 
+Text &Text::operator=(const Book &other) {// virtual
+	Text &textother = dynamic_cast<Text&>(other); // if it is not actually a Text, then we throw
+	// make sure you catch in your caller
+	
+	if (this == &textother) return *this; 
+	Book::operator=(other);
+	topic = textother.topic;
+	return *this;
+
+-----------------------------------------How Virtual Methods Work-----------------------------------
+Consider:
+class Vec {
+	int x, y;
+public:
+	int doSomething() {};
+	....
+}
+
+class Vec2 {
+	int x, y;
+public:
+	virtual int doSomething() {};
+	....
+}
+
+What is the difference here?
+ - not in terms of how they behave, but in terms of what they are?
+ 
+Vec c {1, 2};
+Vec2 w {1, 2};
+
+Since they have the same fields, do they look the same in the memory?
+We can check that!
+
+cout << sizeof(v) << '' << sizeof(w) << endl;
+-> 8 16 // so no, they dont have the same size
+v = 8 bytes // space required to store 2 ints
+// this also tells you that even thought the methods are written inside a class, they are not stored
+// there, so doSomething() is not stored inside a class. That would be foolish you dumbass
+// So compiler turns methods into ordinary functions and stores them separately from objects
+
+Now lets recall what we know about our virtual methods...
+
+Book * pb = new // either Book, Text, Comic
+
+pb->isItHeavy();
+// if isItHeavy is virtual => choice of which virtual is run is based on the type of the actual obj.
+// this is easy to say, but you have to remember that this is not something a compiler knows
+// but it still has to know to call the right function
+
+Since the compiler does not know before hand, which function to call, it has to figure it out at the
+runtime. But how? // its up to the compiler how, there is no single way how all of them do it
+
+But there is one method that is used the most tho:
+ - For each class with virtual methods, the compiler creates a table of function pointers (the vtable)
+ 
+Eg:
+class C {
+	int x, y;
+	virtual void f();
+	virtual void g();
+	void h ();
+	virtual ~C();
+}
+
+Vtable:
+---------
+| "C"   |
+---------
+|  f    |
+---------
+|  g    |
+---------
+|  ~C   |
+---------
+    ^
+    |
+C   |
+---------
+|   x   |
+---------
+|   y   |
+---------
+| vptr  |
+---------
+
+Objects of class C have an extra poitner (the vpointer) to C's variables
+
+Book
+----------
+|title   |
+----------
+|author  |
+----------
+|numPages|
+----------            -----------
+| vptr   |----------->| "Book"  | // this field is there to support dynamic casting
+----------            -----------      -----------------
+                      |isItHeavy|----->|Book::isItHeavy|
+                      -----------      -----------------
+                                       | Blah Blah...  |
+                                       -----------------
+Text
+----------
+|title   |
+----------
+|author  |
+----------
+|numPages|
+----------    
+|topic   |
+----------            -----------
+| vptr   |----------->| "Text"  |
+----------            -----------      -----------------
+                      |isItHeavy|----->|Text::isItHeavy|
+                      -----------      -----------------
+                                       | Blah Blah...  |
+                                       -----------------
+
+So when calling virtual method
+ - you follow the vpointer to the vtable
+ - fetch pointer to actual method
+ - follow the function's pointer + call the function
+
+This is a reason why c++ does not make everything virtual. There are sunk costs associated with
+chasing pointers to find which function to call
+Also there is loss in space, because you want to store that vpointer every time you declare a virtual
+method
+
+Therefore the classes with non-virtual functions produce smaller objcts, then if one of the methods
+is virtual 
+
+this also explains how dynamic casting works
+ - generally speaking the vtable will have information on what this object actually is
+ - thats why he said that dynamic casting works on classes with atleast one vitual method
+ - this also means that dynamic casting can be very expensice // static is cheap tho
+
+Now lets look how these objects look in the memory:
+ - this is compiler-dependent
+ 
+g++:
+----------
+|vptr    |
+----------
+|field1  |
+----------
+|field2  |
+----------    
+|field3  |
+----------
+
+Why does the vpoitner come first? He says it has some kind of advantage...
+
+class A {
+	int a, c;
+	virtual void f();
+}
+
+----------
+|vptr    |
+----------
+|a       |
+----------
+|c       |
+---------- 
+
+class B: public A {
+	int b, d;
+}
+
+----------
+|vptr    |
+----------
+|a       |
+----------
+|c       |
+---------- 
+|b       |
+----------
+|d       |
+----------
+
+Because of the inheritance: 
+ - So that pointer to "b" looks like a pointer to "a" without the last two fields
+
+"We are now about to discuss what is perhaps the most feared topic in all of C++"
+ - very few languages actually to this
+ - the idea that a class can inherit from more than from one class 
+
+class A {
+public:
+	int a;
+};
+
+class B {
+public:
+	int b;
+};
+
+class C: public A, public B {
+public
+	void f() {
+		cout << a << '' << b << endl;
+	}
+};
+
+// what we had on A4 and what we see here is pretty straight forward, but there are some challenges
+// in the more advanced world
+
+Suppose:
+	- B is inheriting from A
+	- C is inheriting from A
+	
+	class D: public B, public C {
+	public:
+		int d;
+	};
+
+	D dobj;
+	dobj.a; // how do you know which a to get, since you have two a's one that is inherited by b
+	// and one that is inherited by c
+	
+	You will ge tcompilation errors if you try to compile it
+	// to fix it you have indicate which one you need
+	cout << d.B::a << endl;
+	
+But you may ask if that is even the right thing to do.. 
+Example:
+ - you have a base class vehicle:
+ - vehicles have a steering wheels, seats, dash panels, engines
+ - there are sea vehicles and land vehicles
+ - but if you go to a tourist town, there are sometimes amphibious vehicles
+ - imagine the inheritance for that, it will be both a land and a sea vehicles
+ - does that mean that the amphibious vehicles have two steering wheels? two seats? two engines?
+ 
+So if B + C both inherit form A, should there be one A part of D, or two? // two is default
+ - should B::a and C::a be the same or different?
+ - what if we want that B and C are both inheriting from the exact same A
+ - it has a name in C++ circles "The deadly diamond"
+ - it has another name "The deadly diamond of death"
+ 
+If you want there to be one object at the top of the diamond instead of two, you have to make A a 
+virtual superclass. A.k.a. you are "employing virtual inheritance"
+
+class B::virtual public A {...}
+class C::virtual public A {...}
+
+This is what will give you a diamond pattern
+
+"this is something we have been using all along" - lushman
+
+best example of this is the I/O steam hierarchy
+
+ios_base is at the top
+ - ios inherits from ios_base
+ - istream inherits virtual ios
+ - ostream inherits virtual ios
+ - istringstream inherits from istream
+ - ifstream inherits from istream
+ - iostream inherits from istream and ostream
+ - ostreingstream inherits from ostream
+ - ofstream inherits from ostream
+ - fstream inherits from iostream
+ - stringstream inherits from iostream
+ 
+How will thw diamond of death pattern be laid out in vtable tho?
+
+----------
+|vptr    |
+----------
+|A Fields|
+----------
+|B Fields|
+---------- 
+|C Fields|
+----------
+|D Fields|
+----------
+
+this wont really work tho.. if we have a pointer pointing at the top of the table:
+ - it might look like an A object, B object, maybe even D object
+ - but it will never look like a C object
+ - C inherits directly from A, so C should come after A
+ - and we can't rearrange C and B because them B won't look like it should
+ 
+If we are stuck, we can definitely ask g++ on what it does.. 
+// g++ is like my best and only friend now. Great. Moving up in this world.. #c++thoughts
+
+Damn, listen what happens next tho..
+
+To see what is inside D, we are going to turn the D pointer into an array and simply print every item
+in it... This way we will show what is in D's memory
+
+4198496
+0
+200
+0
+4198536
+0
+300
+400
+4198576
+100
+
+// since the longer numbers are pointers, because they bigger than ints
+
+----------
+|vptr    | // assume that this is to B
+----------
+|B Fields|
+----------
+|vptr    | // assume that this is to C
+---------- 
+|C Fields|
+----------
+|D Fields|
+----------
+|vptr    | // assume that this is to A
+----------
+|A Fields|
+----------
+
+You have to understand that B inherits from A, it does not know about C or D, so B should be like this:
+----------
+|vptr    |
+----------
+|B Fields|
+----------
+|vptr    |
+---------- 
+|A Fields|
+----------
+
+One thing we learned today is that "the distance from B to its superlcass part A is not always the same"
+// the offset by which B is away from A is stored in the vtable
+
+- location of the superclass is stored in the Vtable
+- Diagram does not look like A,B,C,D silmuntaneously, but slices of it do look like A,B,C,D
+
+D d;
+A *a = &d; // assigning shifts the data to make it look like an A
+
+=> pointer assignment among A,B,C,D changes the address stored in the pointer, so that it is
+	pointing at the right spot, so will the casting operations
+	- static/const/dynamic cast under multi-inheritace also change the value of the pointer
+	- reinterpret_cast does not tho.. because we really want something to look like something else
+	
+// example from lecture is in vtable folder
+// better check it out if you dont want to fail in life..
+
+"Today is the ultimate CS246 lecture" - Brad Lushman
+
+
+------------------------------------Template Functions----------------------------------------------
+
+template <typename T> T min (T x, T y) {
+	return x<y?x:y;
+}
+
+int x = 1, y = 2;
+int z = min(x,y); // notice that we are just going ahead and calling it
+	when we are calling a template class, we have to specify what type it is going to be..
+	- dont have to do that with template functions tho, because C++ can infer that from the arguments
+		that are being passed to the function
+	- sometimes, C++ might not be able to guess the values by itself, so you can always tell it
+	min<int>(x, y);
+	
+So we can do things like the following:
+char w = min('a', 'c'); // T = char
+auto f = min(1.0, 3.0); // T = float
+
+We might now ask, for what types of T does it work?
+The rule is to think:
+ - for what types of T will the body compile
+ - any type that has a less than operation supported
+ 
+void for_each(AbstractIterator start, AbstractIterator finish, int(*f)(int)) {
+	while (start != finish) {
+		f(*start);
+		++ start;
+	}
+} // the idea is that as long as you provide an iterator to your class, we can iterate over any object
+// a class, a list, a vector...
+
+Now think, what does start and finish do here, do we really have abstraction?
+We will have abstraction if this happens:
+- Works as long as AbstractIterator supports !=, *, ++
+- f can be called as a function
+- we want to make these tow arguments above templates
+
+template<typename Iter, typename Func>
+	void for_each(Iter start, Iter finish, Func f) {
+		while (start != finish) {
+			f(*start);
+			++ start;
+		}
+	} // the advatage now is that Iter can be any type supporting !=, ++, *
+	
+There is one type that we are familiar with, and support these three operations, but is not a class:
+	- raw pointers
+	
+void f(int n) {
+	cout << n << endl;
+}
+
+int a[] = {1, 2, 3, 4, 5};
+
+for_each(a, a+5, f); // this will print an array
+// recall: when you call an array by name, it gives a pointer to the first argument
+
+This opens up some possibilities for us that are available in the default library
+- there is a header called <algorithm>
+- full of templaet functions, many of which work over iterators
+- Examples:
+	- for_each (as given above)
+	- template<typename Iter, typename T> 
+		Iter find(Iter first, Iter last, const T&val) {
+			// returns itertor to the item that you are looking for
+			// if nothing found, it returns last
+		}
+	- count, which is like find, but instead it returns the # of occurences of val
+	- template<typename InIter, typename OutIter> 
+		OutIter copy(InIter first, InIter last, OutIter result) {
+			// copies one container range from one class to another, starting at result
+			// Note: does not allocate new memory
+			// for this to be valid, you have to know that the other container has enough space
+			// container types dont have to be the same
+			// can copy from a vector to a list
+		}
+		
+		vector<int> v {1, 2, 3, 4, 5, 6, 7};
+		vector<int> w(4); // space for 4 ints
+		
+		copy(v.begin() + 1, v.begin() + 5, w.begin()); // w = {2, 3, 4, 5}
+		
+	- template<typename InIter, typename OutIter, typename Func> 
+		OutIter transform(InIter first, InIter last, OutIter result, Func f) {
+			while (first != last) {
+				*result = f(*first);
+				++first;
+				++result;
+			}
+			return result;
+		}
+		Eg:
+		int add1(int n) {return n + 1;}
+		vector<int> v {2, 3, 4, 5, 7, 11};
+		vector<int> w(v.size());
+		tranform(v,begin(), v.end(), w.begin(), add1);
+		// w = {3, 4, 6, 8, 12}
+		
+		Q: Just how general is this?
+		Q2: what can we use for Func? 
+		Q3: what can we use for InIter and OutIter?
+		1) Func. How is f used? f(*first)
+			- f can be anything that can be called as a function..
+			// but we can write operator() for objects.
+			Eg:
+			class Plus1{
+				public:
+				int operator() (int n) {return n + 1;}
+			}
+			
+			Now we get this behaviour:
+			Plus1 p;
+			p(4); // produces 5
+			// HOly jesus.. wtf is going on? Why does he have to reveal this on the last day of class
+			
+			tranform(v.begin(), v.end(), w.begin, Plus1()) // Plus1() is a constructor call
+			
+			Generalize:
+			class Plus {
+				int m;
+			public:
+				Plus(int m): m{m} {}
+				int operator() (int n) { return n + m; } 
+			};
+			
+			Now we can do the following:
+			tranform(v.begin(), v.end(), w.begin(), Plus{1}); // this should look awfully similar to
+			// to what we saw in 135
+			
+			Plus1, Plus - called function objects
+				Advantage of having an object over functions, objects can remember things, they can
+				maintain state. Now lets consider something a little bit more exotic
+				
+			class IncreasingPlus{
+				int m = 0;
+			public:
+				int operator() (int n) { return n + (m++); }
+				void reset() { m = 0; }
+			};
+			
+			vector<int> v(5, 0);
+			vecotr<int> w(v.size());
+			tranform(v.begin(), v.end(), w.begin(), IncreasingPlus());
+			// w = {0, 1, 2, 3, 4}
+			This is hard to do with a function, but its easy to do with an object
+			
+			Q: How many ints in a vector v are even?
+			vector<int> v{....};
+			bool even(int n) { return n % 2 == 0; }
+			
+			int x = count_if(v.begin(), v.end(), even);
+			// people resist using these functions because you always have to write your own in loop
+			// comparision functions.. like even for example
+			
+			Seems like a waste to explicitly create function even.
+			If this were Racket, we would use lambda.
+			
+			C++ finally decided to add that too:
+			// wtf is going on? wtf is going on? wtf is going on? wtf is going on? wtf is going on? 
+			// wtf is going on? wtf is going on? wtf is going on? wtf is going on? wtf is going on?
+			// alright back to coding tho..
+			
+			int x = count_if(v.begin(), v.end(), [](int n){return n%2 == 0;});
+			// there are things that go into the square brackets, but we are not going to cover that
+			// C++ lambda is so much dumber than the Racket lambda..
+			// But you can do simple things and its enough to encourage the use of algorithm library
+			// So C++ is magical amazing now..?
+			
+			You might ask what is the type of a lambda function?
+				- it was a type, but its a secret
+				- compiler makes up a type, but never lets you know
+				- if you want to store a lambda in a variable then you can't
+				- unless you use auto // revolutionary
+				
+				auto even = [](int n){ return n%2==0; }
+				
+				What if you want to pass even to a function?
+				int f(declType(even) x) {...} // declType(even) matches even's type
+				
+		2) what about Iterators? how generalized are those?
+			Iterators - apply the notion of iteration to other data sources
+			eg: streams... 
+			
+			#include <iterator>
+			
+			vector<int> v{1, 2, 3, 4, 5};
+			ostream_iterator<int> out{cout, ", "};
+			copy(v.begin(), v.end(), out); // Prints 1, 2, 3, 4, 5,
+			// if you don't want the delimeter on the last one, stop one earlier and print last one
+			// yourself
+			
+			vector<int> v {1, 2, 3, 4, 5};
+			vector<int> w;
+			
+			copy (v.begin(), v.end(), w.begin()); // this is WRONG because copy does not allocate space
+			
+			Remember: 
+			 - copy doesn't allocate space in w.
+			 - it can't - it doesn't even know that w is iterating over a vector
+			 
+			But what if we had an iterator whose assignment operator does manage to somehow allocate
+			space?
+			
+			Then we could do this: 
+			copy(v.begin(), v.end(), back_inserter(w));
+			// this copies v into w and allocates space if neccessary
+			
+			// Wow, its over.
 
