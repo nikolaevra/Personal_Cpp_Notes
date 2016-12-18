@@ -3267,13 +3267,13 @@ Extension: the Non-virtual Interface (NVI)
 
 Hard to separate these ideas if they are tied to the same functions..
  - what if you later want to separate the customizable behaviour into two functions?
- - thats when you make your pure virual methods pure virtual
+ - thats when you make your pure virual methods private
  - this way the client won't have to worry about changing behaviour
  - while sublclasses can override to customize method for their purposes
 
  - how can you make sure that overriden functions conform to the pre/post conditions
 
-The NVI idion says:
+The NVI idiom says:
  - "all public methods should be non-virtual"
  - "all virtual methods should be private or at least protected"
  - one exception, the destructor must always be public
@@ -3288,7 +3288,9 @@ to turn it into an instance of NVI, write it like this:
 
 class DigitalMedia {
 	public:
-		void play( doPlay(); ); // can add before/after code
+		void play(){ 
+			doPlay();
+		}; // can add before/after code
 		// check copyright before playing
 		// update the play count after the thing has been played
 	private:
@@ -3302,7 +3304,7 @@ This extends from the template method:
 
 
 ------------------------------------------Maps--------------------------------------------
-"Hope these help you to navigate through the DD life"
+"Hope these help you to navigate through the CS life"
 
 map<string, int> m;
 m["abc"] = 1;
@@ -3319,14 +3321,16 @@ m.erase("abc");
 To check if something is present in the map
 if (m.count("def")) // will return 0=notFound, 1=Found
 // there is also multimap where things can occur more than once.. 
+// but that is outside the scope of the program
 
 ---------------------------------------Iterating over maps----------------------------------------
 supports iterator objects
  - returns objects in sorted order by key
- - implemented as a binary serch tree
+ - implemented as a binary search tree
 
 if you want to get data in the order that you put them in, then you are using the wrong data structure
 
+Maps use a structure called std::pair to store its objects in groups of two, a pair has .first() and .second() fields
 for (auto &p:m) {
 	cout << p.first << " " << p.second << endl;
 }
@@ -3342,8 +3346,9 @@ is it bad that everything is accessible together?
  - so as long as we are talking about objectives of pair, its doing just fine
 
 -------------------------------------Visitor Pattern-----------------------------------------------
-
-For implementing double dispatch
+This is different from the factory method because this uses the idea of double dispatch. In other words
+there are 2 things that are going to define the behaviour of a function, whereas in Factory pattern, 
+we only check to which subclass the method belongs.
 
 Eg:
 getting back to the game example:
@@ -3407,7 +3412,7 @@ class Stick:public Weapon {
 
 Enemy *e = new Bullet{....};
 Weapon *w = new Rock{...};
-e->strike(*w);
+e->beStruckBy(*w);
 // so what happens here?
 // how does it all work?
  - we start with a fact that bestruckby is a virtual method of enemy
@@ -3464,7 +3469,7 @@ public:
 	void visit(Book &b) override {
 		++theCatalogue[b.getAuthor()];
 	} // what if the author is not there, it will make it automatically with count 0
-	// but the since we are incrementing by 1 ont he spot, we get count of 1 at the end
+	// but since we are incrementing by 1 on the spot, we get count of 1 at the end
 	void visit(Text &t) override {
 		++theCatalogue[t.getTopic()];
 	}
@@ -3486,6 +3491,7 @@ main -> includes Book -> includes BookVisitor -> includes Text -> includes Book
 
 Now we have a circular include dependency 
 
+----------------------------------Including vs. Forward declaration------------------------------------------
 So:
  - text doesn't know what book is
  - we ask ourselves: how many of these includes are really needed
@@ -3519,12 +3525,13 @@ The question is which of these 4 require include and which are ok with just a fo
  	because D doesn't need to know how big A is in order to initialize D (add class A;)
  	// pointers are all the same size
  	
- - C does need one because it wants to know the size of A
+ - C needs one because it wants to know the size of A in order to initialize the object
  
- - B need to know all the fields of A
+ - B need to know all the fields of A since it inherits form it
  
  - E doesn't need one either. 
- 	Does size of A affect the E? 
+ 	Does size of A affect the E? No, f is a function that uses A* as one of the parameters
+	it does not need to know the exact size of A and all of its fields
 
 Moral: "If you don't need an include, then don't do it"
 When class A changes -> only A, B, C need recompilation
@@ -3532,19 +3539,20 @@ When class A changes -> only A, B, C need recompilation
 Now, keep in mind again that its a whole different story in .cc files
 
 In the implementions of D, E:
-"d.cc"
-	void D::f() {
+"e.cc"
+	void E::f() {
 		myAp->someFunction(); // now i need to know about class A
 	}
-// though you still include your A.h here, you only do it in the .cc file
+// now you still include your A.h here,but you only do it in the .cc file
 
 Do the #include in the .cc file, instead of the .h file (where possible)
 // you can include as many .h in your .cc files as you want
 // this is because you never inlude .cc files from .cc files
+// So this way you wont get looped includes
 
 Now lets get this thing working!
 
-"He is not quite done on compilatio dependencies" 
+"He is not quite done on compilation dependencies" 
 
 Now consider the Xwindow class:
  
@@ -3558,18 +3566,18 @@ public:
 	.....
 }
 // Do you know what these fields do? 
-// you actually dont have to know, beacause they are private data, you should not care about it?
+// you actually don't have to know, beacause they are private data, you should not care about it
 // if this is private data and I can't interact with it anyways, why must I see them?
 
 "This is an esthetic element, where we dont care about the fields, so we don't want to see them"
-"If we add or change a private memeber - all clients must recompile"
+"If we add or change a private member - all clients must recompile"
 
- - It may be better to hide these things even more than when they are private
+ - It may be better to hide these things even more than when they are private fields
  
 ------------------------------------------Bridge Pattern-------------------------------------------
 
-Solution: the pimpl idiom
- - short for "pointer implementation"
+Solution: the PIMPL idiom
+ - short for "PoInter IMPlementation"
  - to do it, you move all the private fields into a separate class and simply point to it
  
 create a class XWindowImpl:
@@ -3589,7 +3597,7 @@ then our "Window.h" will look like the following
 class XWindowImpl; // no need to include Xlib.h, forward declare the implementation class
 
 class XWindow {
-	XWindowImpl *pimpl; // since pointer fields dont require includes, there is no compilation 
+	XWindowImpl *pimpl; // since pointer fields don't require includes, there is no compilation 
 	// dependencies on XWindowImpl.h
 	// clients also dont depend on XWindowImpl
 public:
@@ -3674,7 +3682,7 @@ So the GOAL is lowest coupling and highest cohesion!
 
 No matter how tempting it might be, you should never write anything on the screen
 
-here is an example:
+Here is an example:
 Suppose you are writing a Chess game
 
 class ChessBoard{
@@ -3709,7 +3717,7 @@ public:
 This is definitely better, but its still not perfect. 
 What if we don't want to use streams at all?
 What if i want to implement graphical window now, instead of printing things to the screen?
-You might also want to implement variety of languages
+You might also want to implement variety of languages so you need localization now
 
 Your ChessBoard class should not be doing any communications at all
 
@@ -3774,7 +3782,7 @@ void f() {
 	g();
 	delete p;
 } // assuming this is not going to leak
-// except for one possibility.. what if g() raises an exception
+// what if g() raises an exception
 
 What is guaranteed when that happens?
  - During stack unwinding, all stack allocated data is cleaned up
@@ -3856,10 +3864,10 @@ Sample implementation (check repository for more)
 template <typename T> class unique_ptr {
 	T *ptr;
 public:
-	unique_ptr(T *p): p{p} {}
+	unique_ptr(T *p): ptr{p} {}
 	~unique_ptr() {delete ptr;}
-	unique_ptr(const unique_ptr<T> &other) = delete; // this way we say take it away, we dont want it
-	unique_ptr<T> &operator= (const unique_ptr<T> &other) = delete;
+	unique_ptr(const unique_ptr<T> &other) = delete; // disable copy constructor
+	unique_ptr<T> &operator= (const unique_ptr<T> &other) = delete; // take the copy assignment away too
 	unique_ptr(unique_ptr<T> &&other): ptr{other.ptr} {
 		 other.ptr=nullptr;
 	}
@@ -3875,16 +3883,18 @@ public:
 	// in the repository you can also see the arrow operator
 }
 
+One big rule tho:
 NEVER, EVER let the destructor emit an exception
 
-Imagine that there is a ball flying at you and you duck, but while you are ducking, you throw another
-ball, which means that there are two balls flying in yo face!
+Brad Lushman's Example:
+Imagine that there is a baseball flying at you and you duck, but while you are ducking, you throw another
+ball, which means that there are now two baseballs flying in somone else's face!
  - if the destructor was executed during stack unwinding dealing with another exception, then now you
    have two active, unhandled exceptions and the program will abort immidiately
+ - this is a rule btw. Any time there are 2 unhandled exceptions, the program terminates no matter what!
    
-MORAL: whatever you do ever in your life, whoever you become after completing DD and making it in this 
-	huge world, whereever you end up on the map of our planet (possible mars by then), just remember 
-	that you never throw in destructors
+MORAL: whatever you do in your life, whoever you become after completing DD and making it in this 
+	rough world, where ever you end up on the map of our planet, just remember that you never throw in destructors
 	
 ----------------------------------3 Levels of exception safety--------------------------------------
 
@@ -3922,17 +3932,18 @@ A: let's go step-by-step and imagine what happens if:
 		- so nothing happened yet, because the method didn't change anything
 	- method2 throws
 		- then method1 has already run
-		- if we want to offer strong guarantee, we want to undo effects of method1
+		- if we want to offer strong guarantee, we want to undo effects of method1 because method1
+		  might have already executed by now
 		
 But how do you undo effects of one method? what if method1 printed something to the screen?
  - It is usually very hard or impossible to undo something if method1 has non-local side-effects
 
 So the answer is "No, its not exception safe"
 
-so if a is A::method1 one and B::method2 do not have non-local side-effects, then we can use a 
+so if A::method1 one and B::method2 do not have non-local side-effects, then we can use a 
 technique that we already know
  - We can use our good old friend of copy and swap
- - we make a copy, apply methods to it, if nothing was thrown, then we swap the copy for the original
+ - We make a copy, apply methods to it, if nothing was thrown, then we swap the copy for the original
  
 class C {
 	...
@@ -3945,7 +3956,7 @@ class C {
 		temp.method2();
 		
 		a = atemp; // if a throws, we are still good
-		b = btemp; // if b throws, then its bad because a changed already
+		b = btemp; // if b throws, then its bad because a has changed already
 	}
 }
 
@@ -3953,7 +3964,7 @@ Why is this better?
  - if either one of the methods throw, then f is terminated, but the original a and b are the same
  - there is a fly in the ointment.. 
  	- what if copy assignment throws?
- 	- it would be better if swap was nothrow
+ 	- it would be better if we used swap since it offers nothrow guarantee
  	
 Solution, use the PIMPL idiom:
 struct CImpl {
@@ -3962,7 +3973,7 @@ struct CImpl {
 };
 
 class C {
-	unique_ptr<CImpl> -Imp;;
+	unique_ptr<CImpl> Impl;
 	....
 	void f() {
 		auto temp = make_unique<CImpl>(*pImpl); // new pimpl struct on the heap, copy of the old one
@@ -3971,9 +3982,9 @@ class C {
 		std::swap(pImpl, temp); // no-throw guaranteed
 	}
 }
- 	
-If either A::method1() or B::method2() offer no exception safety guarantee, then neither can f()
 
+Rule of thumb for the future: If either A::method1() or B::method2() offer no exception safety guarantee, 
+then neither can f()
 
 ---------------------------------Exception safety and the STL:vectors-------------------------------
 What do we know about vectors?
@@ -3995,11 +4006,11 @@ void g() {
 	...
 	...
 	// now if it goes out of scope, the array is freed, just like before, but there is something differen here
-	// pointers don't have destructors, so this could be a potential memory leak, as ny aobject
+	// pointers don't have destructors, so this could be a potential memory leak, as any object
 	// pointed to by a pointer are not freed, DAMN son, A4 in a nutshell
 }
 
-Vector is saying that idk who are the owners of those objects, idk if they are on the heap or stack
+Vector is saying that i dont now who are the owners of those objects, i dont know if they are on the heap or stack
 So I'm not going to delete it, you deal with them because you probably know more // if not - drop out
  - if vector does not own them, then it should not delete them, and its not a memory leak
  
@@ -4023,7 +4034,6 @@ So should all of your vectors have shared pointers now? not really, think about 
 // if the vector does not own the objects, then you shold only delete the array, not the objects
 // someone else will delete the objects because they have a different owner
 
-
 --------------------------------------Shared Pointers-----------------------------------------------
 
 If you really need to copy pointers and you can't distinguish an owner, there is an alternative:
@@ -4043,7 +4053,7 @@ Shared pointers maintain reference count
  - memory is freed, only when the reference count hits 0
  
 "If unique pointer was a game changer, this is an even bigger game changer"
-"You pobably wondering what this racker shit means here" 
+"You pobably wondering what this racket shit means here" 
 
 (define l1 (cons 1 (cons 2 (cons 3 empty))))
 (define l2 (cons 4 (rest l1)))
@@ -4060,7 +4070,7 @@ a crapload of delete calls and they will crash your program
 
 But now that we know about shared_ptr, we can do it, because they will delete automatically
  - this is almost the same as garbage collectors
- - garbage collectors dont do everything you need them to do (collect files and other shit)
+ - garbage collectors don't do everything you need them to do (collect files and other shit)
  - so C++ is the master race and is better than any other language with garbage collection
  
 Use shared pointers as much as you can, it will dramatically reduce the number of memory leaks
@@ -4071,8 +4081,7 @@ Does that mean that you will never have raw pointers?
  - if 1 object owns it, then use unique_ptr
  - if 1+ object owns it, then use shared_ptr
  
-"He is like: we are going to cover some of the most difficult material in the course, but it is great"
-
+"He is like: we are going to cover some of the most difficult material in the course, but it is all great"
 
 ----------------------------------------------Casting-----------------------------------------------
 "A cast is a way to force an object to be treated as if it was a different type"
@@ -4088,9 +4097,9 @@ C-style casts should be avoided in C++
 
 but C++ also recognizes that sometimes you do actually have to do it
  - if you must cast, you a C++ cast style
- - C++ says that i know that casting is bad, so i will give you 4 different ways to do them:
+ - C++ says that I know that casting is bad, so I will give you 4 different ways to do them:
  	// as we go through all of them, you will see how bad casting is and why having more types of 
- 	// casting is actually better
+ 	// casting is actually better than having only one type.
  	- static_cast - "sensible" casts
  		Eg: casting double to int:
  		double d;
@@ -4109,8 +4118,8 @@ but C++ also recognizes that sometimes you do actually have to do it
 			-> and we are taking all of the responsibility that b is actually pointing to a Text
 		// hopefully you start to see the advantage to the C++ casting logic
 		// if you do have a bug in your program, first thing that you want to do is check your casting
-		// you will searching for cast, you can simply egrep for "static_cast"
-		// whereas with C notation you can't search for it
+		// in other languages you will be searching for egrep "(type that you are casting to)", which will give you amilly of results 
+		// in C++ you can simply egrep for "static_cast"
 		// why we need 4 types of cast? because C cast might have more than one consequence of casting
 		// wereas with 4 different types, casting is more precise
 			
@@ -4121,26 +4130,27 @@ but C++ also recognizes that sometimes you do actually have to do it
 		
 		"You are only promised that if you cast and then cast back to the old type, you will get the same thing"
 		// this is for "I know this makes no sense"
-		// but i trust the compiler to do the right thing in this case
+		// but I trust the compiler to do the right thing in this case
 		
 		"Reinterpret cast does not change the type of the existing objct"
 		"Casting allows you to look at the object through a different lense"
 
 		// there are some cool things that you can do with reinterpret_cast
 		// you can create a similar class and reinterpret the original class as the new class
-		// then, if your new class has identical public fields, you can change the private fields of
-		// the original object
+		// then, if your new class has identical private fields, you can change the private fields of
+		// the original object. Educating potential hackers out here.
 		
 	- const_cast - for converting between const and non-const
 		the only C++ cast that can cast away constants
-		// it is not for changing constant variables, because those are store in private memory
+		// it is not for changing constant variables, because those are stored in private memory
 		
 		Eg: you have a library function
 		void g(int *p); // given to you
 		
 		void f(const int *p) {
 			g(p); // this won't compile, because g might change the p
-			// what if i happen to know that g does not change p, it was just the error in the signature
+			// what if I happen to know that g does not change p, it was just the error in the signature
+			// and you can't change it now
 			// then you do this:
 			g(const_cast<int*>(p));
 		}
@@ -4148,12 +4158,13 @@ but C++ also recognizes that sometimes you do actually have to do it
 		const poisoning - The idea that as soon as you introduce const in one function, you will have
 		to change all other fucntions to be const too
 		// instead you can cast const, but its actually not a good idea, instead fix your const errors
+		// and keep those constants in your life, after all anything can change any second, but the constants
+		// will still be there. Its like the only object you can trust in the times of complete chaos
 		
 	- dynamic_cast - Is it safe to convert a Book* to a Text*?
 		Book *pb;
 		static_cast<Text*>(pb)->getTopic(); // is it safe?
 		// depends on what pb actually points at
-		
 		
 		Better to do a tentative cast // try and see if it succeeds
 		
@@ -4173,7 +4184,7 @@ Now we want to know if we can do the same thing on smart pointers?
 	- dynamic_pointer_cast
 	- this is for casting shared_ptr to shared_ptr
 	
-Now we want to try to use dynamic_cast to make decisions cased on objects RTTI (run-time type information)
+Now we want to try to use dynamic_cast to make decisions cased on objects' RTTI (run-time type information)
 	void whatIsIt (shared_ptr<Book>b) {
 		if (dynamic_pointer_cast<Comic>(b)) cout << "Comic";
 		else if (dynamic_pointer_cast<Text>(b)) cout << "Text";
@@ -4184,16 +4195,15 @@ Now we want to try to use dynamic_cast to make decisions cased on objects RTTI (
 	 - in OOP you should aim at abstraction, where you don't care what subclass you are using
 	 - everytime you make a new sublass, you will have to change your code
 	 - this code is highly coupled to the book class hierarchy and causes bad design
-
 	 
 	 Better: use virtual methods or write a visitor
 	 
 Note: dynamic casting only works on classes with at least one virtual method
 Note: dynamic cast also works with references
-	Text {...}
+	Text t{...}
 	Book &b = t;
 	Text &t2 = dynamic_cast<Text&>(b);
-	// if b points t a Text, t2 is a reference to same Text
+	// if b points at a Text, t2 is a reference to same Text
 	// what if it does not tho?
 	// there is no such thing as null reference, so you get an exception
 	
@@ -4238,24 +4248,26 @@ We can check that!
 cout << sizeof(v) << '' << sizeof(w) << endl;
 -> 8 16 // so no, they dont have the same size
 v = 8 bytes // space required to store 2 ints
-// this also tells you that even thought the methods are written inside a class, they are not stored
-// there, so doSomething() is not stored inside a class. That would be foolish you dumbass
+// this also tells you that even though the methods are written inside a class, they are not stored
+// there, so doSomething() is not stored inside a class. That would be foolish you dumbass, its all about that memory
 // So compiler turns methods into ordinary functions and stores them separately from objects
+// this is also how you can insert functions into structures in C
 
-Now lets recall what we know about our virtual methods...
+Now let's recall what we know about our virtual methods...
 
 Book * pb = new // either Book, Text, Comic
 
 pb->isItHeavy();
 // if isItHeavy is virtual => choice of which virtual is run is based on the type of the actual obj.
 // this is easy to say, but you have to remember that this is not something a compiler knows
-// but it still has to know to call the right function
+// but it still has to know it to call the right function
 
 Since the compiler does not know before hand, which function to call, it has to figure it out at the
 runtime. But how? // its up to the compiler how, there is no single way how all of them do it
 
 But there is one method that is used the most tho:
  - For each class with virtual methods, the compiler creates a table of function pointers (the vtable)
+ // this stuff is going to fuck your life up
  
 Eg:
 class C {
@@ -4423,8 +4435,8 @@ Suppose:
 	dobj.a; // how do you know which a to get, since you have two a's one that is inherited by b
 	// and one that is inherited by c
 	
-	You will ge tcompilation errors if you try to compile it
-	// to fix it you have indicate which one you need
+	You will get compilation errors if you try to compile it
+	// to fix it you to have indicate which one you need
 	cout << d.B::a << endl;
 	
 But you may ask if that is even the right thing to do.. 
@@ -4484,10 +4496,10 @@ this wont really work tho.. if we have a pointer pointing at the top of the tabl
  - it might look like an A object, B object, maybe even D object
  - but it will never look like a C object
  - C inherits directly from A, so C should come after A
- - and we can't rearrange C and B because them B won't look like it should
+ - and we can't rearrange C and B because then B won't look like it should
  
 If we are stuck, we can definitely ask g++ on what it does.. 
-// g++ is like my best and only friend now. Great. Moving up in this world.. #c++thoughts
+// g++ is should be your best and only friend in this world. You are going to live cs, breathe cs, eat cs, and do cs all your life
 
 Damn, listen what happens next tho..
 
@@ -4553,7 +4565,6 @@ A *a = &d; // assigning shifts the data to make it look like an A
 
 "Today is the ultimate CS246 lecture" - Brad Lushman
 
-
 ------------------------------------Template Functions----------------------------------------------
 
 template <typename T> T min (T x, T y) {
@@ -4575,7 +4586,7 @@ auto f = min(1.0, 3.0); // T = float
 We might now ask, for what types of T does it work?
 The rule is to think:
  - for what types of T will the body compile
- - any type that has a less than operation supported
+ - any type that has a less than operation supported \\ wow, could have guessed that one, you dumbass
  
 void for_each(AbstractIterator start, AbstractIterator finish, int(*f)(int)) {
 	while (start != finish) {
@@ -4613,7 +4624,7 @@ for_each(a, a+5, f); // this will print an array
 
 This opens up some possibilities for us that are available in the default library
 - there is a header called <algorithm>
-- full of templaet functions, many of which work over iterators
+- full of template functions, many of which work over iterators
 - Examples:
 	- for_each (as given above)
 	- template<typename Iter, typename T> 
@@ -4653,7 +4664,7 @@ This opens up some possibilities for us that are available in the default librar
 		// w = {3, 4, 6, 8, 12}
 		
 		Q: Just how general is this?
-		Q2: what can we use for Func? 
+		Q2: what can we use for Function? 
 		Q3: what can we use for InIter and OutIter?
 		1) Func. How is f used? f(*first)
 			- f can be anything that can be called as a function..
@@ -4704,9 +4715,10 @@ This opens up some possibilities for us that are available in the default librar
 			vector<int> v{....};
 			bool even(int n) { return n % 2 == 0; }
 			
-			int x = count_if(v.begin(), v.end(), even);
+			A: int x = count_if(v.begin(), v.end(), even);
+			
 			// people resist using these functions because you always have to write your own in loop
-			// comparision functions.. like even for example
+			// comparision functions.. like the function we just wrote even for example
 			
 			Seems like a waste to explicitly create function even.
 			If this were Racket, we would use lambda.
@@ -4720,7 +4732,7 @@ This opens up some possibilities for us that are available in the default librar
 			// there are things that go into the square brackets, but we are not going to cover that
 			// C++ lambda is so much dumber than the Racket lambda..
 			// But you can do simple things and its enough to encourage the use of algorithm library
-			// So C++ is magical amazing now..?
+			// So C++ is magical amazing land now..?
 			
 			You might ask what is the type of a lambda function?
 				- it was a type, but its a secret
