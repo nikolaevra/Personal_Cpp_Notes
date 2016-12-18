@@ -601,8 +601,7 @@ C++ String operations:
 
 * more details are in the printed notes
 
-
-		Default f'n params:
+		Default function parameters:
 
 void printWordInFile (string name="suite.txt") { // passing a default parameter 
   // name can be passed when we call function, but it is not passed, a default value is used
