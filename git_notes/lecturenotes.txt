@@ -4238,6 +4238,10 @@ Note: dynamic cast also works with references
 	
 One example when dynamic casting is really useful:
  - with dynamic casting we can solve polymorhic assignment problem, that involves book, text, comic
+ 	I believe that it's about the assignment of the textbook to a book pointer. So if you remember the idea of slicing
+	where you lose data. I guess here you won't lose it because the dynamic_cast will find that segment of book 
+	inside the textbook and simply return a new pointer, and then you can always reverse the operation if you 
+	have to by recasting again. Might be wrong tho
  - now we are going to write the mixed assignment operator!
  
 Text &Text::operator=(const Book &other) {// virtual
