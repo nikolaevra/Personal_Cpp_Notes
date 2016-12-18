@@ -4137,8 +4137,37 @@ but C++ also recognizes that sometimes you do actually have to do it
 
 		// there are some cool things that you can do with reinterpret_cast
 		// you can create a similar class and reinterpret the original class as the new class
-		// then, if your new class has identical private fields, you can change the private fields of
-		// the original object. Educating potential hackers out here.
+		// then, if your new class has identical private fields, but they are public now, you can reinterpret_cast it
+		// into your class and get the value of provate fields. Educating potential hackers out here. 
+		Here is a code Example:
+		#include <iostream>
+		using namespace std;
+
+		class C {
+  			int x;   // private
+ 		public:
+  			explicit C(int xvalue): x(xvalue) {}
+
+  			int getX() const { return x; }
+		};
+
+		class RogueC {
+ 			public:
+  			int x;
+		};
+
+		int main() {
+  			C c(10);
+
+  			cout << c.getX() << endl;
+
+  			RogueC *r = reinterpret_cast<RogueC*>(&c);
+
+  			r->x = 20;
+
+  			cout << c.getX() << endl;
+		}
+
 		
 	- const_cast - for converting between const and non-const
 		the only C++ cast that can cast away constants
