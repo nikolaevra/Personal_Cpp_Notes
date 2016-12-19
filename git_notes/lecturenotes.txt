@@ -519,7 +519,7 @@ int main () {
 using namespace std;
 
 int main() {
-  ifstream file {"myfile.txt"}; // shit in the curly brackets is initialization syntax. Declaring the ifstream, opens the file.
+  ifstream file {"myfile.txt"}; // stuff in the curly brackets is initialization syntax. Declaring the ifstream, opens the file.
   // We will see this notation later again
   string s; // string is now a type and they manage their own size, not like C
 
@@ -550,7 +550,7 @@ int main() {
 	string s;
 	cin >> s;
 	
-	istringstram ss {s}; // shit in {} is initialization
+	istringstram ss {s}; // stuff in {} is initialization
 	// you first read in a string, then turn it into a stream
 
 	if (ss >> n) break; // check if you got an integer out of the stream
@@ -776,7 +776,7 @@ A: C++ has another pointer like type, they are called references
 	delete np;
 	
 	All local variables are stored on the stack, varaibles are deallocated once they go out of scope. (stack is popped)
-	Allocated memory is stored on the heap, it remains there until i say "fuck this shit, im done" (delete is called)
+	Allocated memory is stored on the heap, it remains there until (delete is called)
 	If you don't delete all allocated memory, you will have a memory leak. Program will eventually fail - incorrect behaviour
 
 	Note: before we asked for space to store only one node
@@ -989,11 +989,11 @@ A: C++ has another pointer like type, they are called references
 			vector.h vector.cc main.cc
 		then you run:		
 			g++14 vector.cc
-		and get a shit error:	// if you get errors in /usr/bin/ld then you are fine, its a linking error
+		and get a bad error:	// if you get errors in /usr/bin/ld then you are fine, its a linking error
 			look at the pre-last line: thats where the error is
 		then you run:
 			g++14 main.cc
-		and get a shit error again // look at the end for error description again
+		and get a bad error again // look at the end for error description again
 		
 
 	To compile separately, do:
@@ -1021,7 +1021,7 @@ A: C++ has another pointer like type, they are called references
 	You have to define it in .h, but not initialize it using extern global var;
 	Initialize the variable in a .cc file global var = 14;
 
-------------------------Including shit in your modules---------------------------
+------------------------Including things in your modules---------------------------
 
 	imagine you have vec.h, vec.cc, linalg.h, linalg.cc, main.cc
 		!!!!!!this won't compile!!!!!!!!! 
@@ -1202,7 +1202,7 @@ A: C++ has another pointer like type, they are called references
 		const int id;
 		int assns, midterm, final;
 		Struct (int id, int midterm, int final):id{id}, assns{assns}, midterm{midterm}, final{final} { // before we start the construction body, right before the first "{"
-			// there are rules tho. Shit before the curly brackets are fileds. Inside the brace brackets are the normal c++ scope rules and id, assns, midterm, final are just parameters
+			// there are rules tho. stuff before the curly brackets are fileds. Inside the brace brackets are the normal c++ scope rules and id, assns, midterm, final are just parameters
 		}
 	}
 
@@ -1387,7 +1387,7 @@ Note: Be very careful with constructors that can take ONE parameter !!!!!!!!!!!
 	delete np; // deletes the whole list
 
 --------------------------------Copy Assignment--------------------------
-	the hardest and trickiest one (will be on the midterm, because everyone fucks it up)
+	the hardest and trickiest one
 
 	Student billy{60, 70, 80};
 	Student jane = billy; // copy constructor
@@ -2058,11 +2058,9 @@ Class List {
 
 So now List can still create Iterators, but the client can only create them by calling begin() and end()
 look into the repository for an example: "~/cs246/1169/lectures/se/"
-// wow this shit is mindblowing
 
 ADVICE: you want to make as little friends as possible
 // only make a friend that can do something for you otherwise it will weaken encapsulation and changing one thing will make you change everything
-// Lushman's advice for life..
 
 ONCE AGAIN:
 - Keep your fields private 
@@ -2542,7 +2540,6 @@ vector<int> v (4, 5); // gives you a vec(5, 5, 5, 5)
 v.emplace_back(6);
 v.emplace_back(7); // now we have (4, 5, 6, 7)
 // we can do this forever and the array will keep growing forever and this array is also STACK allocated
-// DAMN SON, someone give Lushman a cookie
 
 Looping:
 Eg:
@@ -2981,7 +2978,7 @@ p1 = new StuffedCrust(p1);
 cout << p1->desc() << ": " << p1->price() << endl;
 delete p1;
 
-And we are done with the decorator pattern and FML
+And we are done with the decorator pattern
 
 
 -----------------------------------Inheritance in the BIG 5-----------------------------------------
@@ -3126,7 +3123,7 @@ Comic *pc = &c;
 if operator= is non-virtual
  - you get partial assignment through base class pointers
  - if it is virtual, then the compiler allows to mixed assignment
-"No matter what choice you make, traouble awaits.."  -- Brad Lushman, 2016
+No matter what choice you make, traouble awaits..
 
 Whats the solution?
  - is a text really a book?
@@ -3801,7 +3798,7 @@ void f() {
 		delete p;
 		throw;
 	}
-	delete p; // this is UGLY AF and you also get DUPLICATED CODE you dumbass
+	delete p; // this is extremely UGLY and you also get DUPLICATED CODE
 } // this is still not enough, because if g() does not throw, we still need to delete p
 
 This is tedious, error-prone and causes duplication
@@ -3885,7 +3882,7 @@ public:
 One big rule tho:
 NEVER, EVER let the destructor emit an exception
 
-Brad Lushman's Example:
+Example:
 Imagine that there is a baseball flying at you and you duck, but while you are ducking, you throw another
 ball, which means that there are now two baseballs flying in somone else's face!
  - if the destructor was executed during stack unwinding dealing with another exception, then now you
@@ -4052,7 +4049,7 @@ Shared pointers maintain reference count
  - memory is freed, only when the reference count hits 0
  
 "If unique pointer was a game changer, this is an even bigger game changer"
-"You pobably wondering what this racket shit means here" 
+"You pobably wondering what this racket stuff means here" 
 
 (define l1 (cons 1 (cons 2 (cons 3 empty))))
 (define l2 (cons 4 (rest l1)))
@@ -4069,7 +4066,7 @@ a crapload of delete calls and they will crash your program
 
 But now that we know about shared_ptr, we can do it, because they will delete automatically
  - this is almost the same as garbage collectors
- - garbage collectors don't do everything you need them to do (collect files and other shit)
+ - garbage collectors don't do everything you need them to do (collect files and other things)
  - so C++ is the master race and is better than any other language with garbage collection
  
 Use shared pointers as much as you can, it will dramatically reduce the number of memory leaks
@@ -4281,7 +4278,7 @@ cout << sizeof(v) << '' << sizeof(w) << endl;
 -> 8 16 // so no, they dont have the same size
 v = 8 bytes // space required to store 2 ints
 // this also tells you that even though the methods are written inside a class, they are not stored
-// there, so doSomething() is not stored inside a class. That would be foolish you dumbass, its all about that memory
+// there, so doSomething() is not stored inside a class. That would be foolish, its all about that memory efficiency
 // So compiler turns methods into ordinary functions and stores them separately from objects
 // this is also how you can insert functions into structures in C
 
@@ -4299,7 +4296,6 @@ runtime. But how? // its up to the compiler how, there is no single way how all 
 
 But there is one method that is used the most tho:
  - For each class with virtual methods, the compiler creates a table of function pointers (the vtable)
- // this stuff is going to fuck your life up
  
 Eg:
 class C {
@@ -4494,7 +4490,7 @@ class C::virtual public A {...}
 
 This is what will give you a diamond pattern
 
-"this is something we have been using all along" - lushman
+"this is something we have been using all along"
 
 best example of this is the I/O steam hierarchy
 
@@ -4593,9 +4589,6 @@ A *a = &d; // assigning shifts the data to make it look like an A
 	- reinterpret_cast does not tho.. because we really want something to look like something else
 	
 // example from lecture is in vtable folder
-// better check it out if you dont want to fail in life..
-
-"Today is the ultimate CS246 lecture" - Brad Lushman
 
 ------------------------------------Template Functions----------------------------------------------
 
@@ -4618,7 +4611,7 @@ auto f = min(1.0, 3.0); // T = float
 We might now ask, for what types of T does it work?
 The rule is to think:
  - for what types of T will the body compile
- - any type that has a less than operation supported \\ wow, could have guessed that one, you dumbass
+ - any type that has a less than operation supported
  
 void for_each(AbstractIterator start, AbstractIterator finish, int(*f)(int)) {
 	while (start != finish) {
